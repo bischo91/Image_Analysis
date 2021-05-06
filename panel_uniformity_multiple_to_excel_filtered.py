@@ -46,13 +46,13 @@ def plot_panel(img_original, filename):
 
 def detect_panel(img, img_original):
     # Takes grey and original input and returns resized and rotated panel image and boolean whether panel is detected or not
-    img = cv2.GaussianBlur(img, (9,9),0)
+    img = cv2.GaussianBlur(img, (25,25),0)
     ret, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     contours, h = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area>1000000:
-            approx = cv2.approxPolyDP(cnt, 0.09 * cv2.arcLength(cnt, True), True)
+            approx = cv2.approxPolyDP(cnt, 0.07 * cv2.arcLength(cnt, True), True)
     # was 0.009
             if (len(approx) == 4):
                 # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
@@ -121,7 +121,7 @@ def find_vg_from_filename(filename):
 # path = os.path.abspath("C:/Users/bisch/Documents/Mattrix/QVGA Panel/JSR QVGA Panel/JSR QVGA #8_sprayed/photos/after encap_V_en_4V, V_Scan_4V, V_Data_Off_4V/Red")
 # pathstr = r"C:\CS\python_ruby\image_process\RGB\Panel\Test Images\Green".replace("\\","/")
 # pathstr = r"C:\Users\bisch\Documents\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap\B".replace("\\","/")
-pathstr = r"C:\Users\bisch\Documents\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #11_sprayed\Photos after encap\B".replace("\\","/")
+pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #11_sprayed\Photos after encap\R".replace("\\","/")
 
 
 path = os.path.abspath(pathstr)
@@ -296,5 +296,5 @@ except ValueError:
 
 
 for file in os.listdir(path):
-    if file.endswith('grid.jpg') and '-8V' not in file:
+    if (file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and '-8V' not in file:
         os.remove(path+'/'+file)
