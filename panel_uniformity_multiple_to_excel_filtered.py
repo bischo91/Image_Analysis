@@ -52,7 +52,7 @@ def detect_panel(img, img_original):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area>1000000:
-            approx = cv2.approxPolyDP(cnt, 0.07 * cv2.arcLength(cnt, True), True)
+            approx = cv2.approxPolyDP(cnt, 0.09 * cv2.arcLength(cnt, True), True)
     # was 0.009
             if (len(approx) == 4):
                 # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
@@ -111,7 +111,17 @@ def find_vg_from_filename(filename):
     elif zero != []:
         return 0
     else:
-        return None
+        plus = re.findall(r'%s(\d+)' % 'VG \+', filename.upper())
+        minus = re.findall(r'%s(\d+)' % 'VG -', filename.upper())
+        zero = re.findall(r'%s(\d+)' % 'VG ', filename.upper())
+        if plus != []:
+            return '+'+plus[0]
+        elif minus != []:
+            return '-'+minus[0]
+        elif zero != []:
+            return 0
+        else:
+            return None
 
 
 # Set current directory as path (where the py file is is the directory)
@@ -121,7 +131,7 @@ def find_vg_from_filename(filename):
 # path = os.path.abspath("C:/Users/bisch/Documents/Mattrix/QVGA Panel/JSR QVGA Panel/JSR QVGA #8_sprayed/photos/after encap_V_en_4V, V_Scan_4V, V_Data_Off_4V/Red")
 # pathstr = r"C:\CS\python_ruby\image_process\RGB\Panel\Test Images\Green".replace("\\","/")
 # pathstr = r"C:\Users\bisch\Documents\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap\B".replace("\\","/")
-pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\SAIT QVGA Panel\Panel 15\photos\QVGA 15 Panel".replace("\\","/")
+pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap_exp_time_0_4s\B".replace("\\","/")
 
 
 path = os.path.abspath(pathstr)

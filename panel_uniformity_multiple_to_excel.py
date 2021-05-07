@@ -111,8 +111,17 @@ def find_vg_from_filename(filename):
     elif zero != []:
         return 0
     else:
-        return None
-
+        plus = re.findall(r'%s(\d+)' % 'VG \+', filename.upper())
+        minus = re.findall(r'%s(\d+)' % 'VG -', filename.upper())
+        zero = re.findall(r'%s(\d+)' % 'VG ', filename.upper())
+        if plus != []:
+            return '+'+plus[0]
+        elif minus != []:
+            return '-'+minus[0]
+        elif zero != []:
+            return 0
+        else:
+            return None
 
 # Set current directory as path (where the py file is is the directory)
 
