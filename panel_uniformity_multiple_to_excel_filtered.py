@@ -131,7 +131,7 @@ def find_vg_from_filename(filename):
 # path = os.path.abspath("C:/Users/bisch/Documents/Mattrix/QVGA Panel/JSR QVGA Panel/JSR QVGA #8_sprayed/photos/after encap_V_en_4V, V_Scan_4V, V_Data_Off_4V/Red")
 # pathstr = r"C:\CS\python_ruby\image_process\RGB\Panel\Test Images\Green".replace("\\","/")
 # pathstr = r"C:\Users\bisch\Documents\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap\B".replace("\\","/")
-pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap_exp_time_0_4s\B".replace("\\","/")
+pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap_exp_time_0_4s\R".replace("\\","/")
 
 
 path = os.path.abspath(pathstr)
@@ -306,5 +306,6 @@ except ValueError:
 
 
 for file in os.listdir(path):
-    if (file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and '-8V' not in file:
+    if ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and \
+     '-8V' not in file) and ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and '+3V' not in file):
         os.remove(path+'/'+file)
