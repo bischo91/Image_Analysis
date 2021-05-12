@@ -46,6 +46,48 @@ def plot_panel(img_original, filename):
     ax[1].set_ylim([1, 250000])
     fig.tight_layout()
 
+def detect_panel_by_label(img):
+    labeled_array, num_features = label(img)
+    properties = measure.regionprops(labeled_array)
+    bw = np.zeros(np.shape(img), dtype = bool)
+    valid_label = set()
+    max_area = np.max([prop.area for prop in properties])
+    for prop in properties:
+        if max_area == prop.area:
+            valid_label.add(prop.label)
+    current_bw = np.in1d(labeled_array, list(valid_label)).reshape(np.shape(labeled_array))
+    on_position = np.where(current_bw==True)
+    y_min = np.min(on_position[0])
+    y_max = np.max(on_position[0])
+    x_min = np.min(on_position[1])
+    x_max = np.max(on_position[1])
+    x_y_min_pos = []
+    x_y_max_pos = []
+    y_x_min_pos = []
+    y_x_max_pos = []
+    for ii in np.where(on_position[0]==y_min):
+        x_y_min_pos.append(on_position[1][ii])
+    for jj in np.where(on_position[1]==x_max):
+        y_x_max_pos.append(on_position[0][jj])
+    for kk in np.where(on_position[0]==y_max):
+        x_y_max_pos.append(on_position[1][kk])
+    for ll in np.where(on_position[1]==x_min):
+        y_x_min_pos.append(on_position[0][ll])
+    x_y_min_pos_min = np.min(x_y_min_pos)
+    x_y_min_pos_max = np.max(x_y_min_pos)
+
+    if abs(x_max - x_y_min_pos_max) > abs(x_min - x_y_min_pos_min):
+        x1, y1 = x_y_min_pos_min, y_min
+        x2, y2 = x_min, np.max(y_x_min_pos)
+        x3, y3 = np.max(x_y_max_pos), y_max
+        x4, y4   = x_max, np.min(y_x_max_pos)
+    else:
+        x1, y1 = x_min, np.min(y_x_min_pos)
+        x2, y2 = np.min(x_y_max_pos), y_max
+        x3, y3 = x_max, np.max(y_x_max_pos)
+        x4, y4 = x_y_min_pos_max, y_min
+    return (x1,y1), (x2,y2), (x3,y3), (x4,y4)
+
 
 def detect_panel(img, img_original):
     # Takes grey and original input and returns resized and rotated panel image and boolean whether panel is detected or not
@@ -54,121 +96,60 @@ def detect_panel(img, img_original):
     contours, h = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        if area>10000000:
+        if area>1000000:
             approx = cv2.approxPolyDP(cnt, 0.09 * cv2.arcLength(cnt, True), True)
     # was 0.009
             if (len(approx) == 4):
                 # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
                 corners = approx
 
-    try: corners
-    except NameError: corners = None
-    if corners is not None:
-        x1, y1 = corners[0][0]
-        x2, y2 = corners[1][0]
-        x3, y3 = corners[2][0]
-        x4, y4 = corners[3][0]
+    # try: corners
+    # except NameError: corners = None
+    # if corners is not None:
+    #     print('usual')
+    #     x1, y1 = corners[0][0]
+    #     x2, y2 = corners[1][0]
+    #     x3, y3 = corners[2][0]
+    #     x4, y4 = corners[3][0]
+    # else:
+    #     (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
+    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
+    print((x1, y1), (x2, y2), (x3, y3), (x4, y4))
+    hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
+    hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
+    hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
 
-        hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
-        hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
-        hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
-
-        if hxy_1>hxy_2:
-            hx = hxy_2
-            hy = hxy_1
-            dh = hxy_1
-            d = x1-x2
-        else:
-            hx = hxy_1
-            hy = hxy_2
-            dh = hxy_2
-            d = y1-y2
-        theta = np.arcsin(d/dh)*180/np.pi
-        top_left_x = min([x1,x2,x3,x4])
-        top_left_y = min([y1,y2,y3,y4])
-        bot_right_x = max([x1,x2,x3,x4])
-        bot_right_y = max([y1,y2,y3,y4])
-        img_original = img_original[top_left_y:bot_right_y, top_left_x:bot_right_x]
-        nx = np.shape(np.array(img_original))[1]
-        ny = np.shape(np.array(img_original))[0]
-        resize_dim_x_1 = math.ceil((nx - hx)/2)
-        resize_dim_x_2 = resize_dim_x_1 + math.floor(hx)
-        resize_dim_y_1 = math.ceil((ny - hy)/2)
-        resize_dim_y_2 = resize_dim_y_1 + math.floor(hy)
-        img_original = imutils.rotate(img_original, theta)
-        img_resized = img_original[resize_dim_y_1:resize_dim_y_2, resize_dim_x_1:resize_dim_x_2]
-        img_detect = True
+    if hxy_1>hxy_2:
+        hx = hxy_2
+        hy = hxy_1
+        dh = hxy_1
+        d = x1-x2
     else:
-        labeled_array, num_features = label(img)
-        properties = measure.regionprops(labeled_array)
-        bw = np.zeros(np.shape(img), dtype = bool)
-        valid_label = set()
-        max_area = np.max(np.sum([prop.area for prop in properties]))
-        for prop in properties:
-            if max_area*0.9 < prop.area < max_area*1.1:
-                valid_label.add(prop.label)
-        current_bw = np.in1d(labeled_array, list(valid_label)).reshape(np.shape(labeled_array))
-        on_position = np.where(current_bw==True)
-
-        y_min = np.min(on_position[0])
-        y_max = np.max(on_position[0])
-        x_min = np.min(on_position[1])
-        x_max = np.max(on_position[1])
-
-        x_y_min_pos = []
-        x_y_max_pos = []
-        y_x_min_pos = []
-        y_x_max_pos = []
-
-        for ii in np.where(on_position[0]==y_min):
-            x_y_min_pos.append(on_position[1][ii])
-
-        for jj in np.where(on_position[1]==x_max):
-            y_x_max_pos.append(on_position[0][jj])
-
-        for kk in np.where(on_position[0]==y_max):
-            x_y_max_pos.append(on_position[1][kk])
-        for ll in np.where(on_position[1]==x_min):
-            y_x_min_pos.append(on_position[0][ll])
-
-        x_y_min_pos_min = np.min(x_y_min_pos)
-        x_y_min_pos_max = np.max(x_y_min_pos)
-        print(x_y_min_pos_min)
-        print(x_y_min_pos_max)
-        print(x_max)
-        print(x_min)
-        if x_max - x_y_min_pos_max < x_min - x_y_min_pos_min:
-            x1, y1 = x_y_min_pos_min, y_min
-            x2, y2 = x_max, on_position[0][np.min(y_x_max_pos)]
-            x3, y3 = x_min, on_position[0][np.max(y_x_min_pos)]
-            x4, y4 = on_position[1][np.max(x_y_max_pos)], y_max
-        # else:
-        #     x2, y2 = x_y_min_pos_max, y_min
-        #     x4, y4 = x_max, on_position[0][np.max(y_x_max_pos)]
-        #     x3, y3 = on_position[1][np.min(x_y_max_pos)], y_max
-        #     x1, y1 = x_min, on_position[0][np.min(y_x_min_pos)]
-        # THIS ISS WHERE I STOPPED (GOT FOUR CORNERS FOR ONE ANGLE TRY FOR THE OTHERWAY)
-        else:
-            x2, y2 = x_y_min_pos_max, y_min
-            x4, y4 = x_max, np.max(y_x_max_pos)
-            x3, y3 = np.min(x_y_max_pos), y_max
-            x1, y1 = x_min, np.min(y_x_min_pos)
-
-        print((x1,y1))
-        print((x2,y2))
-        print((x3,y3))
-        print((x4,y4))
-
-        # print()
-        plt.imshow(current_bw)
-        plt.show()
-        # for prop in properties:
-            # print(prop.position_x)
+        hx = hxy_1
+        hy = hxy_2
+        dh = hxy_2
+        d = y1-y2
+    theta = np.arcsin(d/dh)*180/np.pi
+    top_left_x = min([x1,x2,x3,x4])
+    top_left_y = min([y1,y2,y3,y4])
+    bot_right_x = max([x1,x2,x3,x4])
+    bot_right_y = max([y1,y2,y3,y4])
+    img_original = img_original[top_left_y:bot_right_y, top_left_x:bot_right_x]
+    nx = np.shape(np.array(img_original))[1]
+    ny = np.shape(np.array(img_original))[0]
+    resize_dim_x_1 = math.ceil((nx - hx)/2)
+    resize_dim_x_2 = resize_dim_x_1 + math.floor(hx)
+    resize_dim_y_1 = math.ceil((ny - hy)/2)
+    resize_dim_y_2 = resize_dim_y_1 + math.floor(hy)
+    img_original = imutils.rotate(img_original, theta)
+    img_resized = img_original[resize_dim_y_1:resize_dim_y_2, resize_dim_x_1:resize_dim_x_2]
+    img_detect = True
+    plt.figure()
+    plt.imshow(img_resized)
 
 
-
-        img_resized = []
-        img_detect = False
+    # img_resized = []
+    # img_detect = False
 
     return img_resized, img_detect
 
@@ -373,7 +354,7 @@ except ValueError:
     wb.save(path+'/Uniformity' + '.xlsx')
 
 
-
+plt.show()
 
 for file in os.listdir(path):
     if ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and \
