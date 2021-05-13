@@ -20,9 +20,9 @@ import imutils
 from skimage.measure import label, regionprops
 from scipy.ndimage import label
 from skimage import measure
-
 import openpyxl
 from openpyxl.drawing.image import Image
+import tkinter.filedialog
 
 
 def plot_panel(img_original, filename):
@@ -56,38 +56,40 @@ def detect_panel_by_label(img):
         if max_area == prop.area:
             valid_label.add(prop.label)
     current_bw = np.in1d(labeled_array, list(valid_label)).reshape(np.shape(labeled_array))
-    on_position = np.where(current_bw==True)
-    y_min = np.min(on_position[0])
-    y_max = np.max(on_position[0])
-    x_min = np.min(on_position[1])
-    x_max = np.max(on_position[1])
-    x_y_min_pos = []
-    x_y_max_pos = []
-    y_x_min_pos = []
-    y_x_max_pos = []
-    for ii in np.where(on_position[0]==y_min):
-        x_y_min_pos.append(on_position[1][ii])
-    for jj in np.where(on_position[1]==x_max):
-        y_x_max_pos.append(on_position[0][jj])
-    for kk in np.where(on_position[0]==y_max):
-        x_y_max_pos.append(on_position[1][kk])
-    for ll in np.where(on_position[1]==x_min):
-        y_x_min_pos.append(on_position[0][ll])
-    x_y_min_pos_min = np.min(x_y_min_pos)
-    x_y_min_pos_max = np.max(x_y_min_pos)
+    if True in current_bw:
+        on_position = np.where(current_bw==True)
+        y_min = np.min(on_position[0])
+        y_max = np.max(on_position[0])
+        x_min = np.min(on_position[1])
+        x_max = np.max(on_position[1])
+        x_y_min_pos = []
+        x_y_max_pos = []
+        y_x_min_pos = []
+        y_x_max_pos = []
+        for ii in np.where(on_position[0]==y_min):
+            x_y_min_pos.append(on_position[1][ii])
+        for jj in np.where(on_position[1]==x_max):
+            y_x_max_pos.append(on_position[0][jj])
+        for kk in np.where(on_position[0]==y_max):
+            x_y_max_pos.append(on_position[1][kk])
+        for ll in np.where(on_position[1]==x_min):
+            y_x_min_pos.append(on_position[0][ll])
+        x_y_min_pos_min = np.min(x_y_min_pos)
+        x_y_min_pos_max = np.max(x_y_min_pos)
 
-    if abs(x_max - x_y_min_pos_max) > abs(x_min - x_y_min_pos_min):
-        x1, y1 = x_y_min_pos_min, y_min
-        x2, y2 = x_min, np.max(y_x_min_pos)
-        x3, y3 = np.max(x_y_max_pos), y_max
-        x4, y4   = x_max, np.min(y_x_max_pos)
+        if abs(x_max - x_y_min_pos_max) > abs(x_min - x_y_min_pos_min):
+            x1, y1 = x_y_min_pos_min, y_min
+            x2, y2 = x_min, np.max(y_x_min_pos)
+            x3, y3 = np.max(x_y_max_pos), y_max
+            x4, y4   = x_max, np.min(y_x_max_pos)
+        else:
+            x1, y1 = x_min, np.min(y_x_min_pos)
+            x2, y2 = np.min(x_y_max_pos), y_max
+            x3, y3 = x_max, np.max(y_x_max_pos)
+            x4, y4 = x_y_min_pos_max, y_min
+        return (x1,y1), (x2,y2), (x3,y3), (x4,y4)
     else:
-        x1, y1 = x_min, np.min(y_x_min_pos)
-        x2, y2 = np.min(x_y_max_pos), y_max
-        x3, y3 = x_max, np.max(y_x_max_pos)
-        x4, y4 = x_y_min_pos_max, y_min
-    return (x1,y1), (x2,y2), (x3,y3), (x4,y4)
-
+        return (0,0),(0,0),(0,0),(0,0)
 
 def detect_panel(img, img_original):
     # Takes grey and original input and returns resized and rotated panel image and boolean whether panel is detected or not
@@ -103,56 +105,49 @@ def detect_panel(img, img_original):
                 # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
                 corners = approx
 
-    # try: corners
-    # except NameError: corners = None
-    # if corners is not None:
-    #     print('usual')
-    #     x1, y1 = corners[0][0]
-    #     x2, y2 = corners[1][0]
-    #     x3, y3 = corners[2][0]
-    #     x4, y4 = corners[3][0]
-    # else:
-    #     (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
-    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
-    print((x1, y1), (x2, y2), (x3, y3), (x4, y4))
-    hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
-    hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
-    hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
-
-    if hxy_1>hxy_2:
-        hx = hxy_2
-        hy = hxy_1
-        dh = hxy_1
-        d = x1-x2
+    try: corners
+    except NameError: corners = None
+    if corners is not None:
+        x1, y1 = corners[0][0]
+        x2, y2 = corners[1][0]
+        x3, y3 = corners[2][0]
+        x4, y4 = corners[3][0]
     else:
-        hx = hxy_1
-        hy = hxy_2
-        dh = hxy_2
-        d = y1-y2
-    theta = np.arcsin(d/dh)*180/np.pi
-    top_left_x = min([x1,x2,x3,x4])
-    top_left_y = min([y1,y2,y3,y4])
-    bot_right_x = max([x1,x2,x3,x4])
-    bot_right_y = max([y1,y2,y3,y4])
-    img_original = img_original[top_left_y:bot_right_y, top_left_x:bot_right_x]
-    nx = np.shape(np.array(img_original))[1]
-    ny = np.shape(np.array(img_original))[0]
-    resize_dim_x_1 = math.ceil((nx - hx)/2)
-    resize_dim_x_2 = resize_dim_x_1 + math.floor(hx)
-    resize_dim_y_1 = math.ceil((ny - hy)/2)
-    resize_dim_y_2 = resize_dim_y_1 + math.floor(hy)
-    img_original = imutils.rotate(img_original, theta)
-    img_resized = img_original[resize_dim_y_1:resize_dim_y_2, resize_dim_x_1:resize_dim_x_2]
-    img_detect = True
-    plt.figure()
-    plt.imshow(img_resized)
+        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
+    if sum([x1, x2, x3, x4, y1, y2, y3, y4])>0:
+        hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
+        hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
+        hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
 
-
-    # img_resized = []
-    # img_detect = False
-
+        if hxy_1>hxy_2:
+            hx = hxy_2
+            hy = hxy_1
+            dh = hxy_1
+            d = x1-x2
+        else:
+            hx = hxy_1
+            hy = hxy_2
+            dh = hxy_2
+            d = y1-y2
+        theta = np.arcsin(d/dh)*180/np.pi
+        top_left_x = min([x1,x2,x3,x4])
+        top_left_y = min([y1,y2,y3,y4])
+        bot_right_x = max([x1,x2,x3,x4])
+        bot_right_y = max([y1,y2,y3,y4])
+        img_original = img_original[top_left_y:bot_right_y, top_left_x:bot_right_x]
+        nx = np.shape(np.array(img_original))[1]
+        ny = np.shape(np.array(img_original))[0]
+        resize_dim_x_1 = math.ceil((nx - hx)/2)
+        resize_dim_x_2 = resize_dim_x_1 + math.floor(hx)
+        resize_dim_y_1 = math.ceil((ny - hy)/2)
+        resize_dim_y_2 = resize_dim_y_1 + math.floor(hy)
+        img_original = imutils.rotate(img_original, theta)
+        img_resized = img_original[resize_dim_y_1:resize_dim_y_2, resize_dim_x_1:resize_dim_x_2]
+        img_detect = True
+    else:
+        img_detect = False
+        img_resized = []
     return img_resized, img_detect
-
 
 def find_vg_from_filename(filename):
     plus = re.findall(r'%s(\d+)' % 'VG_\+', filename.upper())
@@ -177,63 +172,23 @@ def find_vg_from_filename(filename):
         else:
             return None
 
-
-# Set current directory as path (where the py file is is the directory)
-
-# Set path
-# path = os.path.abspath("C:/CS/python_ruby/image_process/RGB/Panel/Uniformity/QVGA 17/exposure time 1_60")
-# path = os.path.abspath("C:/Users/bisch/Documents/Mattrix/QVGA Panel/JSR QVGA Panel/JSR QVGA #8_sprayed/photos/after encap_V_en_4V, V_Scan_4V, V_Data_Off_4V/Red")
-# pathstr = r"C:\CS\python_ruby\image_process\RGB\Panel\Test Images\Green".replace("\\","/")
-# pathstr = r"C:\Users\bisch\Documents\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap\B".replace("\\","/")
-pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap_exp_time_0_4s\RGB\test".replace("\\","/")
-
-
-path = os.path.abspath(pathstr)
-# Read all files in the folder
-allfiles = [f for f in listdir(path) if isfile(join(path,f))]
-imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
-
-wb = openpyxl.Workbook()
-sheet_overall = wb.active
-k=0
-for j in range(0, len(imgfiles)):
-    filename = imgfiles[j]
-    # Load image
-    img = mpimg.imread(path+'/'+filename)
-    # Pixel Array
-    arr = np.array(img)
-    img = cv2.imread(path+'/'+filename)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    img_original = mpimg.imread(path+'/'+filename)
-    [img_resized, img_detect] = detect_panel(img, img_original)
-
-
-
-    if img_detect == False or 'grid' in filename or 'cropped' in filename:
-        print(filename + ': Detection Fail')
-    else:
-        print(filename + ': Complete')
-        with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
-        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
+def pixel_vale_for_grid(img_resized, grid_x, grid_y, grid_size):
         img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
-        arr = np.array(img_gray)
-        l = np.shape(np.array(arr))[0]
-        w = np.shape(np.array(arr))[1]
-        # print(str(w)+ 'X' + str(l) + '\n' + str(l/w))
-        grid_x = 7
+        l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
+        w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
         grid_y = 9
+        grid_x = 7
+        grid_size = 50
         n = grid_y+1
         m = grid_x+1
-        grid_size = 50
         dl = l/n
         dw = w/m
         coordinate_list =[]
-
         pixel_average_list = []
         pixel_std_list = []
         pixel_data = []
-        # for grid
 
+        # for grid
         for p in range(1, n):
             for q in range(1, m):
                 # position_x.append(q*dw)
@@ -255,16 +210,69 @@ for j in range(0, len(imgfiles)):
                             img_resized[ii,jj] = [255, 0, 0]
                 grid_num = str(p) + 'X' + str(q)
                 pixel_data.append([grid_num, np.average(pixel_value_list), np.std(pixel_value_list)])
+        return pixel_data, img_resized
 
+
+# Set path
+
+
+# root = tkinter.Tk()
+# path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
+# root.withdraw()
+
+pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\test images".replace("\\","/")
+path = os.path.abspath(pathstr)
+
+
+# Read all files in the folder
+
+allfiles = [f for f in listdir(path) if isfile(join(path,f))]
+allfiles = [f for f in allfiles if 'cropped' not in f and 'grid' not in f]
+imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
+
+wb = openpyxl.Workbook()
+sheet_overall = wb.active
+k=0
+for j in range(0, len(imgfiles)):
+    filename = imgfiles[j]
+    # Load image
+    img = mpimg.imread(path+'/'+filename)
+    # Pixel Array
+    arr = np.array(img)
+    img = cv2.imread(path+'/'+filename)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img_original = mpimg.imread(path+'/'+filename)
+    [img_resized, img_detect] = detect_panel(img, img_original)
+
+    if img_detect == False or 'grid' in filename or 'cropped' in filename:
+        print(filename + ': Detection Fail')
+    else:
+        print(filename + ': Complete')
+        with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
+        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
+        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
+
+        l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
+        w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
+
+        grid_x = 7
+        grid_y = 9
+        grid_size = 50
+        [pixel_data, img_resized] = pixel_vale_for_grid(img_resized, grid_x, grid_y, grid_size)
+        # hist = cv2.calcHist([img_gray], [0], None, [250], [0,250])
+        # plt.figure()
+        # plt.plot(hist)
+        # plt.figure()
+        # plt.hist
+        # print(np.shape(img_gray))
         new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
         cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
-
 
         Vg = find_vg_from_filename(filename)
         if Vg == None:
             Vg = filename
-        sheet = wb.create_sheet('Vg = ' + str(Vg) + 'V')
 
+        sheet = wb.create_sheet('Vg = ' + str(Vg) + 'V')
         sheet.cell(row=1, column=1).value = 'Pixel #'
         sheet.cell(row=1, column=2).value = 'Average'
         sheet.cell(row=1, column=3).value = 'STDEV'
@@ -295,7 +303,6 @@ for j in range(0, len(imgfiles)):
         pixel_number_filtered = []
         pixel_std_filtered = []
         not_counting = []
-
         pct_rng = 100
         for j in pixel_data:
             if pixel_median*((100-pct_rng)/100) < j[1] < pixel_median*((100+pct_rng)/100) \
@@ -305,7 +312,6 @@ for j in range(0, len(imgfiles)):
                 pixel_std_filtered.append(j[2])
             else:
                 not_counting.append(j[0])
-
         sheet.cell(row=2, column=6).value = pixel_average
         sheet.cell(row=3, column=6).value = pixel_std
         sheet.cell(row=4, column=6).value = min([j[1] for j in pixel_data])
@@ -319,7 +325,6 @@ for j in range(0, len(imgfiles)):
             sheet.cell(row=13, column=6).value = max(pixel_average_filtered)
             sheet.cell(row=14, column=6).value = 100 - np.std(pixel_average_filtered)
             sheet.cell(row=15, column=6).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
-
         if len(not_counting) == 0:
             sheet.cell(row=16, column=5).value = 'Counting all pixels'
         else:
@@ -327,7 +332,6 @@ for j in range(0, len(imgfiles)):
             # sheet.cell(row=17, column=5).value = ",".join([str(integer) for integer in not_counting])
             for i in range(0, len(not_counting)):
                 sheet.cell(row=17+i, column=5).value = not_counting[i]
-
 
         sheet.cell(row=1, column=10).value = filename.replace('.JPG','').replace('.jpg','')
         img_excel = openpyxl.drawing.image.Image(new_img_file)
@@ -342,8 +346,6 @@ for j in range(0, len(imgfiles)):
         sheet_overall.cell(row=k+2, column=2).value = (1 -(pixel_std/pixel_average))*100
         sheet_overall.cell(row=k+2, column=3).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
         k+=1
-
-
 try:
     name_index = filename.upper().index('VD')
     sheet_overall.auto_filter.ref = "A1:C13"
