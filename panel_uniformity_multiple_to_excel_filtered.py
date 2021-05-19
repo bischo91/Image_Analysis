@@ -128,7 +128,7 @@ def find_vg_from_filename(filename):
 
 # Set path
 
-pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap_exp_time_0_4s\R".replace("\\","/")
+pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap_photos\RGB".replace("\\","/")
 
 
 path = os.path.abspath(pathstr)
