@@ -7,15 +7,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import axes
 import matplotlib.image as mpimg
-from PIL import Image
-import PIL
 import math
 import cv2
 import re
 import skimage
-from skimage.feature import hessian_matrix, hessian_matrix_eigvals
 import skimage.feature
-import skimage.viewer
 import imutils
 from skimage.measure import label, regionprops
 from scipy.ndimage import label
@@ -172,7 +168,7 @@ def find_vg_from_filename(filename):
         else:
             return None
 
-def pixel_vale_for_grid(img_resized, grid_x, grid_y, grid_size):
+def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
         img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
         l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
         w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
@@ -214,25 +210,23 @@ def pixel_vale_for_grid(img_resized, grid_x, grid_y, grid_size):
 
 
 # Set path
-
-
-# root = tkinter.Tk()
-# path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
-# root.withdraw()
-
-pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\test images".replace("\\","/")
-path = os.path.abspath(pathstr)
+root = tkinter.Tk()
+path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
+root.withdraw()
+# pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\test images".replace("\\","/")
+# path = os.path.abspath(pathstr)
 
 
 # Read all files in the folder
-
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 allfiles = [f for f in allfiles if 'cropped' not in f and 'grid' not in f]
 imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
 
+# Make Excel Sheet
 wb = openpyxl.Workbook()
 sheet_overall = wb.active
 k=0
+
 for j in range(0, len(imgfiles)):
     filename = imgfiles[j]
     # Load image
@@ -242,6 +236,7 @@ for j in range(0, len(imgfiles)):
     img = cv2.imread(path+'/'+filename)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img_original = mpimg.imread(path+'/'+filename)
+    # Detect panel region
     [img_resized, img_detect] = detect_panel(img, img_original)
 
     if img_detect == False or 'grid' in filename or 'cropped' in filename:
@@ -254,20 +249,15 @@ for j in range(0, len(imgfiles)):
 
         l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
         w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
-
+        # Define grid
         grid_x = 7
         grid_y = 9
         grid_size = 50
-        [pixel_data, img_resized] = pixel_vale_for_grid(img_resized, grid_x, grid_y, grid_size)
-        # hist = cv2.calcHist([img_gray], [0], None, [250], [0,250])
-        # plt.figure()
-        # plt.plot(hist)
-        # plt.figure()
-        # plt.hist
-        # print(np.shape(img_gray))
+        # Extract pixel value for each grid
+        [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
+
         new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
         cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
-
         Vg = find_vg_from_filename(filename)
         if Vg == None:
             Vg = filename
@@ -276,7 +266,6 @@ for j in range(0, len(imgfiles)):
         sheet.cell(row=1, column=1).value = 'Pixel #'
         sheet.cell(row=1, column=2).value = 'Average'
         sheet.cell(row=1, column=3).value = 'STDEV'
-
         for i in range(len(pixel_data)):
             sheet.cell(row=i+2, column=1).value = pixel_data[i][0]
             sheet.cell(row=i+2, column=2).value = pixel_data[i][1]
@@ -304,6 +293,7 @@ for j in range(0, len(imgfiles)):
         pixel_std_filtered = []
         not_counting = []
         pct_rng = 100
+
         for j in pixel_data:
             if pixel_median*((100-pct_rng)/100) < j[1] < pixel_median*((100+pct_rng)/100) \
                 and j[2]<2*np.average([i[2] for i in pixel_data]) and j[1]*1.5>j[2]:

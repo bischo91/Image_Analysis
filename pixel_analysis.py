@@ -25,6 +25,10 @@ from openpyxl.drawing.image import Image
 import tkinter.filedialog
 
 
+# Pixel-to-pixel
+# Where are low values at?
+
+
 
 def uniformity_cal(values):
     avg = np.average(values)
