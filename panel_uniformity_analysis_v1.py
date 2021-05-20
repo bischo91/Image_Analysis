@@ -21,27 +21,6 @@ from openpyxl.drawing.image import Image
 import tkinter.filedialog
 
 
-def plot_panel(img_original, filename):
-    arr = np.array(img_original)
-    fig, ax = plt.subplots(1,2,figsize=(15,5), dpi=100)
-    ax[0].imshow(img_original)
-    ax[0].set_axis_off()
-    ax[0].set_title(filename.replace('/',''))
-
-    histR = cv2.calcHist([arr[:,:,0]], [0], None, [255], [0, 255])
-    histG = cv2.calcHist([arr[:,:,1]], [0], None, [255], [0, 255])
-    histB = cv2.calcHist([arr[:,:,2]], [0], None, [255], [0, 255])
-
-    # print(max(histR))
-    ax[1].plot(histR, 'r')
-    ax[1].plot(histG, 'g')
-    ax[1].plot(histB, 'b')
-    ax[1].legend(['R', 'G', 'B'])
-    ax[1].set_xlim([0, 255])
-    ax[1].set_title('Rpeak: ' + str(histR[254]) + 'Gpeak: ' + str(histG[254]))
-    ax[1].set_ylim([1, 250000])
-    fig.tight_layout()
-
 def detect_panel_by_label(img):
     labeled_array, num_features = label(img)
     properties = measure.regionprops(labeled_array)
@@ -344,9 +323,6 @@ try:
 
 except ValueError:
     wb.save(path+'/Uniformity' + '.xlsx')
-
-
-plt.show()
 
 for file in os.listdir(path):
     if ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and \
