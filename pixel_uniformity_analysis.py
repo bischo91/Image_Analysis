@@ -47,7 +47,6 @@ def detect_calculate_pixel(img, i):
             img_i_co[n,m] = (max(img[n,m,:]) == img[n,m,i])
     img_i_co = (img_i_co==1)
     img_i = np.bitwise_and(img_i_co, img_i_th)
-
     labeled_array, num_features = label(img_i)
     properties = measure.regionprops(labeled_array)
     img_i = np.zeros(np.shape(img_i), dtype = bool)
@@ -69,7 +68,7 @@ def detect_calculate_pixel(img, i):
         min_col = round(bbox[1]+w)
         max_row = round(bbox[2]-h)
         max_col = round(bbox[3]-w)
-        pixel_value[k] = np.average(img_gray[min_row:max_row, min_col:max_col])
+        pixel_value[k] = round(np.average(img_gray[min_row:max_row, min_col:max_col]))
         for row in range(min_row, max_row):
             for col in range(min_col, max_col):
                 img_o[row, col] = [0,0,0]
@@ -118,9 +117,13 @@ def detect_calculate_pixel_2(img, i):
             img_o[coord[0], coord[1]] = [0,0,0]
             pixel_ind_value[k] = img_gray[coord[0], coord[1]]
             k+=1
-        pixel_value[p] = np.average(pixel_ind_value)
+        pixel_value[p] = round(np.average(pixel_ind_value))
         p+=1
     return img_o, pixel_value
+
+
+def flatten(list_in):
+    return [item for elem in list_in for item in elem]
 
 # pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap_photos\microscope pixels\test".replace("\\","/")
 # pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #14_JSR sprayed\after encap microscopic images Vg -8V, Vd -17V".replace("\\","/")
@@ -142,7 +145,12 @@ allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 # imgfiles = [f for f in allfiles if f.upper().endswith('.PNG')]
 imgfiles = [f for f in allfiles if (f.upper().endswith('.BMP') or f.upper().endswith('.PNG')) and 'Uniformity' not in f]
 
-
+pixel_total_R = []
+pixel_total_G = []
+pixel_total_B = []
+pixel_total_R_2 = []
+pixel_total_G_2 = []
+pixel_total_B_2 = []
 for i in range(0, len(imgfiles)):
     filename = imgfiles[i]
     # Load image
@@ -151,7 +159,9 @@ for i in range(0, len(imgfiles)):
     img_R, R_pixel_value = detect_calculate_pixel(img_original, 0)
     img_G, G_pixel_value = detect_calculate_pixel(img_original, 1)
     img_B, B_pixel_value = detect_calculate_pixel(img_original, 2)
-
+    pixel_total_R.append(R_pixel_value.tolist())
+    pixel_total_G.append(G_pixel_value.tolist())
+    pixel_total_B.append(B_pixel_value.tolist())
     fig, ax = plt.subplots(2,3, figsize=(10,10), dpi=100) #figsize 15 15 to save dpi 500
     fig.suptitle(filename)
     ax[0,0].imshow(img_R)
@@ -164,18 +174,20 @@ for i in range(0, len(imgfiles)):
     ax[1,0].hist(R_pixel_value, bins=255, color = 'r')
     ax[1,1].hist(G_pixel_value, bins=255, color = 'g')
     ax[1,2].hist(B_pixel_value, bins=255, color = 'b')
-    # ax[1,0].set_xlim([0, 255])
-    # ax[1,1].set_xlim([0, 255])
-    # ax[1,2].set_xlim([0, 255])
+    ax[1,0].set_xlim([0, 255])
+    ax[1,1].set_xlim([0, 255])
+    ax[1,2].set_xlim([0, 255])
     ax[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
     ax[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
     ax[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
 
 
-    img_R, R_pixel_value = detect_calculate_pixel_2(img_original, 0)
-    img_G, G_pixel_value = detect_calculate_pixel_2(img_original, 1)
-    img_B, B_pixel_value = detect_calculate_pixel_2(img_original, 2)
-
+    img_R, R_pixel_value_2 = detect_calculate_pixel_2(img_original, 0)
+    img_G, G_pixel_value_2 = detect_calculate_pixel_2(img_original, 1)
+    img_B, B_pixel_value_2 = detect_calculate_pixel_2(img_original, 2)
+    pixel_total_R_2.append(R_pixel_value_2.tolist())
+    pixel_total_G_2.append(G_pixel_value_2.tolist())
+    pixel_total_B_2.append(B_pixel_value_2.tolist())
     fig2, ax2 = plt.subplots(2,3, figsize=(15,15), dpi=100) #figsize 15 15 to save dpi 500
     fig2.suptitle(filename)
     ax2[0,0].imshow(img_R)
@@ -184,18 +196,43 @@ for i in range(0, len(imgfiles)):
     ax2[0,1].set_axis_off()
     ax2[0,2].imshow(img_B)
     ax2[0,2].set_axis_off()
-    ax2[1,0].hist(R_pixel_value, bins=255, color = 'r')
-    ax2[1,1].hist(G_pixel_value, bins=255, color = 'g')
-    ax2[1,2].hist(B_pixel_value, bins=255, color = 'b')
-    # ax[1,0].set_xlim([0, 255])
-    # ax[1,1].set_xlim([0, 255])
-    # ax[1,2].set_xlim([0, 255])
-    ax2[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
-    ax2[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
-    ax2[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
+    ax2[1,0].hist(R_pixel_value_2, bins=255, color = 'r')
+    ax2[1,1].hist(G_pixel_value_2, bins=255, color = 'g')
+    ax2[1,2].hist(B_pixel_value_2, bins=255, color = 'b')
+    ax2[1,0].set_xlim([0, 255])
+    ax2[1,1].set_xlim([0, 255])
+    ax2[1,2].set_xlim([0, 255])
+    ax2[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value_2)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
+    ax2[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value_2)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
+    ax2[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value_2)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
 
     fig.savefig(path + '/Uniformity_method_1' + filename.replace('bmp','png'))
     fig2.savefig(path+ '/Uniformity_method_2' + filename.replace('bmp','png'))
 
 
-plt.show()
+fig_all, ax_all = plt.subplots(3,1, figsize=(10,10), dpi=100)
+fig_all.suptitle('RGB Histogram')
+ax_all[0].hist(flatten(pixel_total_R), bins=255, color='r')
+ax_all[1].hist(flatten(pixel_total_G), bins=255, color='g')
+ax_all[2].hist(flatten(pixel_total_B), bins=255, color='b')
+ax_all[0].set_xlim([0,255])
+ax_all[1].set_xlim([0,255])
+ax_all[2].set_xlim([0,255])
+ax_all[0].set_title('R, Count: ' + str(len(flatten(pixel_total_R))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_R))))
+ax_all[1].set_title('G, Count: ' + str(len(flatten(pixel_total_G))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_G))))
+ax_all[2].set_title('B, Count: ' + str(len(flatten(pixel_total_B))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_B))))
+fig_all.savefig(path+ '/Uniformity_all.png')
+
+fig_all_2, ax_all_2 = plt.subplots(3,1, figsize=(10,10), dpi=100)
+fig_all_2.suptitle('RGB Histogram_2')
+ax_all_2[0].hist(flatten(pixel_total_R_2), bins=255, color='r')
+ax_all_2[1].hist(flatten(pixel_total_G_2), bins=255, color='g')
+ax_all_2[2].hist(flatten(pixel_total_B_2), bins=255, color='b')
+ax_all_2[0].set_xlim([0,255])
+ax_all_2[1].set_xlim([0,255])
+ax_all_2[2].set_xlim([0,255])
+ax_all_2[0].set_title('R, Count: ' + str(len(flatten(pixel_total_R_2))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_R_2))))
+ax_all_2[1].set_title('G, Count: ' + str(len(flatten(pixel_total_G_2))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_G_2))))
+ax_all_2[2].set_title('B, Count: ' + str(len(flatten(pixel_total_B_2))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_B_2))))
+fig_all_2.savefig(path+ '/Uniformity_all_2.png')
+# plt.show()
