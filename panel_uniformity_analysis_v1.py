@@ -62,9 +62,9 @@ def detect_panel_by_label(img):
             x2, y2 = np.min(x_y_max_pos), y_max
             x3, y3 = x_max, np.max(y_x_max_pos)
             x4, y4 = x_y_min_pos_max, y_min
-        return (x1,y1), (x2,y2), (x3,y3), (x4,y4)
+        return (x1,y1), (x2,y2), (x3,y3), (x4,y4), True
     else:
-        return (0,0),(0,0),(0,0),(0,0)
+        return (0,0),(0,0),(0,0),(0,0), False
 
 def detect_panel(img, img_original):
     # Takes grey and original input and returns resized and rotated panel image and boolean whether panel is detected or not
@@ -88,7 +88,9 @@ def detect_panel(img, img_original):
         x3, y3 = corners[2][0]
         x4, y4 = corners[3][0]
     else:
-        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = detect_panel_by_label(img)
+        (x1, y1), (x2, y2), (x3, y3), (x4, y4), detect_success = detect_panel_by_label(img)
+        if detect_success==False:
+            return [], False
     if sum([x1, x2, x3, x4, y1, y2, y3, y4])>0:
         hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
         hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
@@ -148,44 +150,44 @@ def find_vg_from_filename(filename):
             return None
 
 def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
-        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
-        l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
-        w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
-        grid_y = 9
-        grid_x = 7
-        grid_size = 50
-        n = grid_y+1
-        m = grid_x+1
-        dl = l/n
-        dw = w/m
-        coordinate_list =[]
-        pixel_average_list = []
-        pixel_std_list = []
-        pixel_data = []
+    img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
+    l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
+    w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
+    grid_y = 9
+    grid_x = 7
+    grid_size = 50
+    n = grid_y+1
+    m = grid_x+1
+    dl = l/n
+    dw = w/m
+    coordinate_list =[]
+    pixel_average_list = []
+    pixel_std_list = []
+    pixel_data = []
 
-        # for grid
-        for p in range(1, n):
-            for q in range(1, m):
-                # position_x.append(q*dw)
-                coordinate_list.append([p*dl, q*dw])
-                x_center = round(p*dl)
-                y_center = round(q*dw)
-                x_max = int(x_center + (grid_size/2))
-                x_min = int(x_center - (grid_size/2))
-                y_max = int(y_center + (grid_size/2))
-                y_min = int(y_center - (grid_size/2))
-                pixel_value_list = []
-                # for region
-                for ii in range(x_min, x_max):
-                    for jj in range(y_min, y_max):
-                        pixel_value_list.append(img_gray[ii,jj])
-                        if abs(ii-x_min) < 5 or abs(ii-x_max) <5:
-                            img_resized[ii,jj] = [255, 0, 0]
-                        if abs(jj-y_min) < 5 or abs(jj-y_max) <5:
-                            img_resized[ii,jj] = [255, 0, 0]
-                grid_num = str(p) + 'X' + str(q)
-                pixel_data.append([grid_num, np.average(pixel_value_list), np.std(pixel_value_list)])
-        return pixel_data, img_resized
+    # for grid
+    for p in range(1, n):
+        for q in range(1, m):
+            # position_x.append(q*dw)
+            coordinate_list.append([p*dl, q*dw])
+            x_center = round(p*dl)
+            y_center = round(q*dw)
+            x_max = int(x_center + (grid_size/2))
+            x_min = int(x_center - (grid_size/2))
+            y_max = int(y_center + (grid_size/2))
+            y_min = int(y_center - (grid_size/2))
+            pixel_value_list = []
+            # for region
+            for ii in range(x_min, x_max):
+                for jj in range(y_min, y_max):
+                    pixel_value_list.append(img_gray[ii,jj])
+                    if abs(ii-x_min) < 5 or abs(ii-x_max) <5:
+                        img_resized[ii,jj] = [255, 0, 0]
+                    if abs(jj-y_min) < 5 or abs(jj-y_max) <5:
+                        img_resized[ii,jj] = [255, 0, 0]
+            grid_num = str(p) + 'X' + str(q)
+            pixel_data.append([grid_num, np.average(pixel_value_list), np.std(pixel_value_list)])
+    return pixel_data, img_resized
 
 
 # Set path
@@ -217,8 +219,7 @@ for j in range(0, len(imgfiles)):
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
     [img_resized, img_detect] = detect_panel(img, img_original)
-
-    if img_detect == False or 'grid' in filename or 'cropped' in filename:
+    if img_detect == False or 'grid' in filename or 'cropped' in filename or np.shape(img_resized)[0]<1000 or np.shape(img_resized)[1]<1000:
         print(filename + ': Detection Fail')
     else:
         print(filename + ': Complete')
@@ -325,6 +326,9 @@ except ValueError:
     wb.save(path+'/Uniformity' + '.xlsx')
 
 for file in os.listdir(path):
-    if ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and \
-     '-8V' not in file) and ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and '+3V' not in file):
+    # if ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and \
+    #  '-8V' not in file) and ((file.endswith('cropped.jpg') or file.endswith('grid.jpg')) and '+3V' not in file):
+    #     os.remove(path+'/'+file)
+    if (file.endswith('grid.jpg') and \
+     '-8V' not in file) and (file.endswith('grid.jpg') and '+3V' not in file):
         os.remove(path+'/'+file)
