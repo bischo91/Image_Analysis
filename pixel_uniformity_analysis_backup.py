@@ -23,32 +23,13 @@ import tkinter.filedialog
 
 
 class ImageProcess:
-    def image_select_by_threshold(img):
+    def image_threshold(img):
         # Take one of R/G/B pixel values and binarize by thresholding
         img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 0)
         img = cv2.GaussianBlur(img, (9, 9), 0)
         ret, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         img = (img==255) # Change img_i to True/False arrays
         return img
-
-    def image_select_by_color(img, img_original_RGB, i):
-        img = np.zeros(np.shape(img))
-        for n in range(0, np.shape(img)[0]):
-            for m in range(0, np.shape(img)[1]):
-                img[n,m] = (max(img_original_RGB[n,m,:]) == img_original_RGB[n,m,i])
-        img = (img==1)
-        return img
-
-    def detect_pixel_boxes(img):
-        labeled_array, num_features = label(img)
-        properties = measure.regionprops(labeled_array)
-        valid_label = set()
-        bbox_list = []
-        for prop in properties:
-            if prop.area>750:
-                valid_label.add(prop.label)
-                bbox_list.append(prop.bbox)
-        return bbox_list
 
 
 def uniformity_cal(values):
@@ -61,18 +42,38 @@ def uniformity_cal(values):
 
 def detect_calculate_pixel(img, i):
     # Takes image and color (R/G/B) and returns filtered image and average pixel values on the box
+
     # i = 0, 1, 2 for R, G, B respectively
     img_i = img[:,:,i]
-    img_o = img.copy()
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    # img_R = cv2.GaussianBlur(img_R, (25, 25), 0)
+    # img_R = cv2.adaptiveThreshold(img_R, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 0)
+
     # Seleting from image thresholding
-    img_i_th = ImageProcess.image_select_by_threshold(img_i)
+    img_i_th = ImageProcess.image_threshold(img_i)
+
     # Selecting from maximum color (R/G/B)
-    img_i_co = ImageProcess.image_select_by_color(img_i, img, i)
-    # Combine Selected Image (Selection from threshold AND Selection from maximum color)
+    img_i_co = np.zeros(np.shape(img_i_th)) # initialize img_i_co
+    # Box shape
+    for n in range(0, np.shape(img_i)[0]):
+        for m in range(0, np.shape(img_i)[1]):
+            img_i_co[n,m] = (max(img[n,m,:]) == img[n,m,i])
+    img_i_co = (img_i_co==1)
+
+
     img_i = np.bitwise_and(img_i_co, img_i_th)
-    # Detect bounding boxes of displayed pixels
-    bbox_list = ImageProcess.detect_pixel_boxes(img_i)
+    labeled_array, num_features = label(img_i)
+    properties = measure.regionprops(labeled_array)
+    img_i = np.zeros(np.shape(img_i), dtype = bool)
+    valid_label = set()
+    bbox_list = []
+    for prop in properties:
+        if prop.area>750:
+            valid_label.add(prop.label)
+            bbox_list.append(prop.bbox)
+    img_i = np.in1d(labeled_array, list(valid_label)).reshape(np.shape(labeled_array))
+
+    img_o = img.copy()
     pixel_value = np.zeros(len(bbox_list))
     k=0
     for bbox in bbox_list:
@@ -89,6 +90,8 @@ def detect_calculate_pixel(img, i):
             # circle_detect=np.uint16(np.around(circle_detect))
             ret, img_ind = cv2.threshold(img_ind, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             ind_pixel_value=[]
+        # pixel_value[k] = round(np.average(img_gray[min_row:max_row, min_col:max_col]))
+        # pixel_value[k] = round(np.average(img_ind[min_row:max_row, min_col:max_col]))
             for row in range(min_row, max_row):
                 for col in range(min_col, max_col):
                     if img_ind[row-min_row,col-min_col] == 255:
@@ -105,27 +108,25 @@ def detect_calculate_pixel(img, i):
     return img_o, pixel_value
 
 def detect_calculate_pixel_2(img, i):
-
-    def detect_pixel_boxes(img):
-        labeled_array, num_features = label(img)
-        properties = measure.regionprops(labeled_array)
-        valid_label = set()
-        bbox_list = []
-        for prop in properties:
-            if prop.area>750:
-                valid_label.add(prop.label)
-                bbox_list.append(prop.bbox)
-        return bbox_list
-
-
     # All pixels
     img_i = img[:,:,i]
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # img_R = cv2.GaussianBlur(img_R, (25, 25), 0)
-    img_i_th = ImageProcess.image_select_by_threshold(img_i)
-    img_i_co = ImageProcess.image_select_by_color(img_i, img, i)
+
+    # img_R = cv2.adaptiveThreshold(img_R, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 0)
+    img_i = cv2.adaptiveThreshold(img_i, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 0)
+    img_i = cv2.GaussianBlur(img_i, (9, 9), 0)
+    ret, img_i_th = cv2.threshold(img_i, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    # kernel = np.ones((5,5), np.uint8)
+    # img_i_th = cv2.erode(img_i_th, kernel)
+    img_i_th = (img_i_th==255)
+    img_i_co = np.zeros(np.shape(img_i_th))
+    for n in range(0, np.shape(img_i)[0]):
+        for m in range(0, np.shape(img_i)[1]):
+            img_i_co[n,m] = (max(img[n,m,:]) == img[n,m,i])
+    img_i_co = (img_i_co==1)
     img_i = np.bitwise_and(img_i_co, img_i_th)
-    bbox_list = ImageProcess.detect_pixel_boxes(img_i)
+
     labeled_array, num_features = label(img_i)
     properties = measure.regionprops(labeled_array)
     img_i = np.zeros(np.shape(img_i), dtype = bool)
