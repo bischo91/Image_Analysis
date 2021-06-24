@@ -62,14 +62,14 @@ def uniformity_cal(values):
 def detect_calculate_pixel(img, i):
     # Takes image and color (R/G/B) and returns filtered image and average pixel values on the box
     # i = 0, 1, 2 for R, G, B respectively
-    img_i = img[:,:,i]
-    img_o = img.copy()
-    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    img_gray_weight = img_gray
-    # rgb_weights = [0.33,0.33,0.33]
-    # img_gray_weight = np.dot(img[...,:3], rgb_weights)
-    # img_gray_weight = np.uint8(np.round(img_gray_weight, 0).astype(int))
 
+    img_o = img.copy()
+    img_i = img[:,:,i]
+
+    fig_1, ax_tut_1 = plt.subplots(1,2)
+    ax_tut_1[0].imshow(img_i)
+
+    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # Seleting from image thresholding
     img_i_th = ImageProcess.image_select_by_threshold(img_i)
 
@@ -79,9 +79,34 @@ def detect_calculate_pixel(img, i):
     # Combine Selected Image (Selection from threshold AND Selection from maximum color)
     img_i = np.bitwise_and(img_i_co, img_i_th)
 
+    ax_tut_1[1].imshow(img_gray)
+    if i == 0:
+        color = 'R'
+    elif i==1:
+        color = 'G'
+    elif i==2:
+        color = 'B'
+    ax_tut_1[0].set_title('img_i (one color) for '+color)
+    ax_tut_1[1].set_title('img_gray for '+color)
+    fig_2, ax_tut_2 = plt.subplots(1,3)
+    ax_tut_2[0].imshow(img_i_th)
+    ax_tut_2[0].set_title('img_i_th for '+color)
+    ax_tut_2[1].imshow(img_i_co)
+    ax_tut_2[1].set_title('img_i_co for '+color)
+    ax_tut_2[2].imshow(img_i)
+    ax_tut_2[2].set_title('img_i_th AND img_i_co for '+color)
+
+    ax_tut_1[0].set_axis_off()
+    ax_tut_1[1].set_axis_off()
+    ax_tut_2[0].set_axis_off()
+    ax_tut_2[1].set_axis_off()
+    ax_tut_2[2].set_axis_off()
+
+    
     # Detect bounding boxes of displayed pixels
     bbox_list = ImageProcess.detect_pixel_boxes(img_i)
     pixel_value = np.zeros(len(bbox_list))
+    print(bbox_list)
     k=0
     for bbox in bbox_list:
         h = (bbox[2] - bbox[0])*0.25
@@ -101,10 +126,10 @@ def detect_calculate_pixel(img, i):
                 for col in range(min_col, max_col):
                     if img_ind[row-min_row,col-min_col] == 255:
                         img_o[row, col] = [0,0,0]
-                        ind_pixel_value.append(img_gray_weight[row,col])
+                        ind_pixel_value.append(img_gray[row,col])
             pixel_value[k] = round(np.average(ind_pixel_value))
         else:
-            pixel_value[k] = round(np.average(img_gray_weight[min_row:max_row, min_col:max_col]))
+            pixel_value[k] = round(np.average(img_gray[min_row:max_row, min_col:max_col]))
             for row in range(min_row, max_row):
                 for col in range(min_col, max_col):
                     img_o[row, col] = [0,0,0]
@@ -186,7 +211,7 @@ pixel_total_B_2 = []
 for i in range(0, len(imgfiles)):
     filename = imgfiles[i]
     # Load image
-    # img = cv2.imread(path+'/'+filename)
+    img = cv2.imread(path+'/'+filename)
     img_original = cv2.imread(path+'/'+filename)
     img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
     img_R, R_pixel_value = detect_calculate_pixel(img_original, 0)
@@ -266,4 +291,4 @@ fig_all.savefig(path+ '/Uniformity_all.png')
 # ax_all_2[1].set_title('G, Count: ' + str(len(flatten(pixel_total_G_2))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_G_2))))
 # ax_all_2[2].set_title('B, Count: ' + str(len(flatten(pixel_total_B_2))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_B_2))))
 # fig_all_2.savefig(path+ '/Uniformity_all_2.png')
-# plt.show()
+plt.show()

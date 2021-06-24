@@ -159,8 +159,9 @@ def line_intersection(line1, line2, polar=False):
 
 # Set current directory as path (where the py file is is the directory)
 path = os.getcwd()
-# path = os.path.abspath("C:/CS/python_ruby/image_process/CNT/test_img/test")
-path = os.path.abspath("G:\Shared drives\MTTX_Team Drive\R&D Projects\Image Analysis\Test Images for Analysis\Standard Images for Recipe Testing")
+
+path = os.path.abspath(r"C:\Users\bisch\Desktop\Mattrix\image_process\CNT\test_img\test".replace("\\","/"))
+# path = os.path.abspath("G:\Shared drives\MTTX_Team Drive\R&D Projects\Image Analysis\Test Images for Analysis\Standard Images for Recipe Testing")
 onlyfiles = [ f for f in listdir(path) if isfile(join(path,f)) ]
 i=0
 

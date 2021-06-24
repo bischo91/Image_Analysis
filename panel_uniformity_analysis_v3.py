@@ -149,6 +149,7 @@ def find_vg_from_filename(filename):
         else:
             return None
 
+
 def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
     img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
     l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
@@ -189,6 +190,82 @@ def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
             pixel_data.append([grid_num, np.average(pixel_value_list), np.std(pixel_value_list)])
     return pixel_data, img_resized
 
+def create_excel_sheet(pixel_data, new_img_file, filename, k):
+    Vg = find_vg_from_filename(filename)
+    if Vg == None:
+        Vg = filename
+    sheet = wb.create_sheet('Vg = ' + str(Vg) + 'V')
+    sheet.cell(row=1, column=1).value = 'Pixel #'
+    sheet.cell(row=1, column=2).value = 'Average'
+    sheet.cell(row=1, column=3).value = 'STDEV'
+    for i in range(len(pixel_data)):
+        sheet.cell(row=i+2, column=1).value = pixel_data[i][0]
+        sheet.cell(row=i+2, column=2).value = pixel_data[i][1]
+        sheet.cell(row=i+2, column=3).value = pixel_data[i][2]
+    sheet.cell(row=1, column=5).value = 'Overall'
+    sheet.cell(row=2, column=5).value = 'Average'
+    sheet.cell(row=3, column=5).value = 'STDEV'
+    sheet.cell(row=4, column=5).value = 'Lmin'
+    sheet.cell(row=5, column=5).value = 'Lmax'
+    sheet.cell(row=6, column=5).value = '100% - STDEV'
+    sheet.cell(row=7, column=5).value = '1-(STDEV/AVG)'
+    sheet.cell(row=9, column=5).value = 'Filtered'
+    sheet.cell(row=10, column=5).value = 'Average'
+    sheet.cell(row=11, column=5).value = 'STDEV'
+    sheet.cell(row=12, column=5).value = 'Lmin'
+    sheet.cell(row=13, column=5).value = 'Lmax'
+    sheet.cell(row=14, column=5).value = '100% - STDEV'
+    sheet.cell(row=15, column=5).value = '1-(STDEV/AVG)'
+
+    pixel_average = np.average([j[1] for j in pixel_data])
+    pixel_std = np.std([j[1] for j in pixel_data])
+    pixel_median = np.median([j[1] for j in pixel_data])
+    pixel_average_filtered = []
+    pixel_number_filtered = []
+    pixel_std_filtered = []
+    not_counting = []
+    pct_rng = 100
+
+    for j in pixel_data:
+        if pixel_median*((100-pct_rng)/100) < j[1] < pixel_median*((100+pct_rng)/100) \
+            and j[2]<2*np.average([i[2] for i in pixel_data]) and j[1]*1.5>j[2]:
+            pixel_number_filtered.append(j[0])
+            pixel_average_filtered.append(j[1])
+            pixel_std_filtered.append(j[2])
+        else:
+            not_counting.append(j[0])
+    sheet.cell(row=2, column=6).value = pixel_average
+    sheet.cell(row=3, column=6).value = pixel_std
+    sheet.cell(row=4, column=6).value = min([j[1] for j in pixel_data])
+    sheet.cell(row=5, column=6).value = max([j[1] for j in pixel_data])
+    sheet.cell(row=6, column=6).value = 100 - pixel_std
+    sheet.cell(row=7, column=6).value = (1 -(pixel_std/pixel_average))*100
+    if len(pixel_number_filtered) != 0:
+        sheet.cell(row=10, column=6).value = np.average(pixel_average_filtered)
+        sheet.cell(row=11, column=6).value = np.std(pixel_average_filtered)
+        sheet.cell(row=12, column=6).value = min(pixel_average_filtered)
+        sheet.cell(row=13, column=6).value = max(pixel_average_filtered)
+        sheet.cell(row=14, column=6).value = 100 - np.std(pixel_average_filtered)
+        sheet.cell(row=15, column=6).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
+    if len(not_counting) == 0:
+        sheet.cell(row=16, column=5).value = 'Counting all pixels'
+    else:
+        sheet.cell(row=16, column=5).value = 'Not counting pixels:'
+        # sheet.cell(row=17, column=5).value = ",".join([str(integer) for integer in not_counting])
+        for i in range(0, len(not_counting)):
+            sheet.cell(row=17+i, column=5).value = not_counting[i]
+    sheet.cell(row=1, column=10).value = filename.replace('.JPG','').replace('.jpg','')
+    img_excel = openpyxl.drawing.image.Image(new_img_file)
+    img_excel.width = int(img_resized.shape[1])*0.2
+    img_excel.height = int(img_resized.shape[0])*0.2
+    sheet.add_image(img_excel, 'J2')
+    sheet_overall.title = 'Overall'
+    sheet_overall.cell(row=1, column=1).value = 'Vg (V)'
+    sheet_overall.cell(row=1, column=2).value = 'Uniformity'
+    sheet_overall.cell(row=1, column=3).value = 'Filtered Uniformity'
+    sheet_overall.cell(row=k+2, column=1).value = int(Vg)
+    sheet_overall.cell(row=k+2, column=2).value = (1 -(pixel_std/pixel_average))*100
+    sheet_overall.cell(row=k+2, column=3).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
 
 # Set path
 root = tkinter.Tk()
@@ -215,7 +292,7 @@ for j in range(0, len(imgfiles)):
     # Pixel Array
     arr = np.array(img)
     img = cv2.imread(path+'/'+filename)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
     [img_resized, img_detect] = detect_panel(img, img_original)
@@ -224,8 +301,8 @@ for j in range(0, len(imgfiles)):
     else:
         print(filename + ': Complete')
         with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
-        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
-        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
+        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
 
         l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
         w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
@@ -237,91 +314,14 @@ for j in range(0, len(imgfiles)):
         [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
 
         new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
-        cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
-        Vg = find_vg_from_filename(filename)
-        if Vg == None:
-            Vg = filename
-
-        sheet = wb.create_sheet('Vg = ' + str(Vg) + 'V')
-        sheet.cell(row=1, column=1).value = 'Pixel #'
-        sheet.cell(row=1, column=2).value = 'Average'
-        sheet.cell(row=1, column=3).value = 'STDEV'
-        for i in range(len(pixel_data)):
-            sheet.cell(row=i+2, column=1).value = pixel_data[i][0]
-            sheet.cell(row=i+2, column=2).value = pixel_data[i][1]
-            sheet.cell(row=i+2, column=3).value = pixel_data[i][2]
-        sheet.cell(row=1, column=5).value = 'Overall'
-        sheet.cell(row=2, column=5).value = 'Average'
-        sheet.cell(row=3, column=5).value = 'STDEV'
-        sheet.cell(row=4, column=5).value = 'Lmin'
-        sheet.cell(row=5, column=5).value = 'Lmax'
-        sheet.cell(row=6, column=5).value = '100% - STDEV'
-        sheet.cell(row=7, column=5).value = '1-(STDEV/AVG)'
-        sheet.cell(row=9, column=5).value = 'Filtered'
-        sheet.cell(row=10, column=5).value = 'Average'
-        sheet.cell(row=11, column=5).value = 'STDEV'
-        sheet.cell(row=12, column=5).value = 'Lmin'
-        sheet.cell(row=13, column=5).value = 'Lmax'
-        sheet.cell(row=14, column=5).value = '100% - STDEV'
-        sheet.cell(row=15, column=5).value = '1-(STDEV/AVG)'
-
-        pixel_average = np.average([j[1] for j in pixel_data])
-        pixel_std = np.std([j[1] for j in pixel_data])
-        pixel_median = np.median([j[1] for j in pixel_data])
-        pixel_average_filtered = []
-        pixel_number_filtered = []
-        pixel_std_filtered = []
-        not_counting = []
-        pct_rng = 100
-
-        for j in pixel_data:
-            if pixel_median*((100-pct_rng)/100) < j[1] < pixel_median*((100+pct_rng)/100) \
-                and j[2]<2*np.average([i[2] for i in pixel_data]) and j[1]*1.5>j[2]:
-                pixel_number_filtered.append(j[0])
-                pixel_average_filtered.append(j[1])
-                pixel_std_filtered.append(j[2])
-            else:
-                not_counting.append(j[0])
-        sheet.cell(row=2, column=6).value = pixel_average
-        sheet.cell(row=3, column=6).value = pixel_std
-        sheet.cell(row=4, column=6).value = min([j[1] for j in pixel_data])
-        sheet.cell(row=5, column=6).value = max([j[1] for j in pixel_data])
-        sheet.cell(row=6, column=6).value = 100 - pixel_std
-        sheet.cell(row=7, column=6).value = (1 -(pixel_std/pixel_average))*100
-        if len(pixel_number_filtered) != 0:
-            sheet.cell(row=10, column=6).value = np.average(pixel_average_filtered)
-            sheet.cell(row=11, column=6).value = np.std(pixel_average_filtered)
-            sheet.cell(row=12, column=6).value = min(pixel_average_filtered)
-            sheet.cell(row=13, column=6).value = max(pixel_average_filtered)
-            sheet.cell(row=14, column=6).value = 100 - np.std(pixel_average_filtered)
-            sheet.cell(row=15, column=6).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
-        if len(not_counting) == 0:
-            sheet.cell(row=16, column=5).value = 'Counting all pixels'
-        else:
-            sheet.cell(row=16, column=5).value = 'Not counting pixels:'
-            # sheet.cell(row=17, column=5).value = ",".join([str(integer) for integer in not_counting])
-            for i in range(0, len(not_counting)):
-                sheet.cell(row=17+i, column=5).value = not_counting[i]
-
-        sheet.cell(row=1, column=10).value = filename.replace('.JPG','').replace('.jpg','')
-        img_excel = openpyxl.drawing.image.Image(new_img_file)
-        img_excel.width = int(img_resized.shape[1])*0.2
-        img_excel.height = int(img_resized.shape[0])*0.2
-        sheet.add_image(img_excel, 'J2')
-        sheet_overall.title = 'Overall'
-        sheet_overall.cell(row=1, column=1).value = 'Vg (V)'
-        sheet_overall.cell(row=1, column=2).value = 'Uniformity'
-        sheet_overall.cell(row=1, column=3).value = 'Filtered Uniformity'
-        sheet_overall.cell(row=k+2, column=1).value = int(Vg)
-        sheet_overall.cell(row=k+2, column=2).value = (1 -(pixel_std/pixel_average))*100
-        sheet_overall.cell(row=k+2, column=3).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
+        cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+        create_excel_sheet(pixel_data, new_img_file, filename, k)
         k+=1
 try:
     name_index = filename.upper().index('VD')
     sheet_overall.auto_filter.ref = "A1:C13"
     sheet_overall.auto_filter.add_sort_condition("A1:A13", True)
     wb.save(path+'/'+filename[:name_index].replace('_','').replace('.JPG','') + '.xlsx')
-
 except ValueError:
     wb.save(path+'/Uniformity' + '.xlsx')
 

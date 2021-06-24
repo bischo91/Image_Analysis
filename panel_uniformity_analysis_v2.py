@@ -215,7 +215,7 @@ for j in range(0, len(imgfiles)):
     # Pixel Array
     arr = np.array(img)
     img = cv2.imread(path+'/'+filename)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
     [img_resized, img_detect] = detect_panel(img, img_original)
@@ -224,8 +224,8 @@ for j in range(0, len(imgfiles)):
     else:
         print(filename + ': Complete')
         with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
-        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
-        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
+        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
 
         l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
         w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
@@ -237,7 +237,7 @@ for j in range(0, len(imgfiles)):
         [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
 
         new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
-        cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
         Vg = find_vg_from_filename(filename)
         if Vg == None:
             Vg = filename

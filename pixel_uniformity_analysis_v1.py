@@ -32,6 +32,9 @@ class ImageProcess:
         return img
 
     def image_select_by_color(img, img_original_RGB, i):
+        # Find which color is maximum on each pixel, and if the color matches the selected color, return True on that pixel.
+        # Otherwise False on all the pixels.
+        # Output is the True/False arrays
         img = np.zeros(np.shape(img))
         for n in range(0, np.shape(img)[0]):
             for m in range(0, np.shape(img)[1]):
@@ -40,13 +43,15 @@ class ImageProcess:
         return img
 
     def detect_pixel_boxes(img):
+        # Find all bouding box of all features on the image
+        # Return list of locations of the bouding boxes
         labeled_array, num_features = label(img)
         properties = measure.regionprops(labeled_array)
-        valid_label = set()
+        # valid_label = set()
         bbox_list = []
         for prop in properties:
             if prop.area>750:
-                valid_label.add(prop.label)
+                # valid_label.add(prop.label)
                 bbox_list.append(prop.bbox)
         return bbox_list
 
@@ -65,11 +70,6 @@ def detect_calculate_pixel(img, i):
     img_i = img[:,:,i]
     img_o = img.copy()
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    img_gray_weight = img_gray
-    # rgb_weights = [0.33,0.33,0.33]
-    # img_gray_weight = np.dot(img[...,:3], rgb_weights)
-    # img_gray_weight = np.uint8(np.round(img_gray_weight, 0).astype(int))
-
     # Seleting from image thresholding
     img_i_th = ImageProcess.image_select_by_threshold(img_i)
 
@@ -94,17 +94,16 @@ def detect_calculate_pixel(img, i):
         circle_detect = cv2.HoughCircles(cv2.blur(img_ind,(3,3)), \
         cv2.HOUGH_GRADIENT, 1.5, 1, param1 = 100, param2 = 0.5, minRadius = 1, maxRadius =-1)
         if circle_detect is not None:
-            # circle_detect=np.uint16(np.around(circle_detect))
             ret, img_ind = cv2.threshold(img_ind, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             ind_pixel_value=[]
             for row in range(min_row, max_row):
                 for col in range(min_col, max_col):
                     if img_ind[row-min_row,col-min_col] == 255:
                         img_o[row, col] = [0,0,0]
-                        ind_pixel_value.append(img_gray_weight[row,col])
+                        ind_pixel_value.append(img_gray[row,col])
             pixel_value[k] = round(np.average(ind_pixel_value))
         else:
-            pixel_value[k] = round(np.average(img_gray_weight[min_row:max_row, min_col:max_col]))
+            pixel_value[k] = round(np.average(img_gray[min_row:max_row, min_col:max_col]))
             for row in range(min_row, max_row):
                 for col in range(min_col, max_col):
                     img_o[row, col] = [0,0,0]

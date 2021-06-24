@@ -192,9 +192,28 @@ for i in range(0, len(imgfiles)):
     img_R, R_pixel_value = detect_calculate_pixel(img_original, 0)
     img_G, G_pixel_value = detect_calculate_pixel(img_original, 1)
     img_B, B_pixel_value = detect_calculate_pixel(img_original, 2)
+
+    # print(np.shape(R_pixel_value))
+
+    # print(np.linalg.norm(R_pixel_value))
+    # print(np.linalg.norm(G_pixel_value))
+    # print(np.linalg.norm(B_pixel_value))
+
+    R_pixel_value = R_pixel_value/np.linalg.norm(R_pixel_value)
+    G_pixel_value = G_pixel_value/np.linalg.norm(G_pixel_value)
+    B_pixel_value = B_pixel_value/np.linalg.norm(B_pixel_value)
+
+    # R_pixel_value = (R_pixel_value-np.min(R_pixel_value))/(np.max(R_pixel_value)-np.min(R_pixel_value))
+    # G_pixel_value = (G_pixel_value-np.min(G_pixel_value))/(np.max(G_pixel_value)-np.min(G_pixel_value))
+    # B_pixel_value = (B_pixel_value-np.min(B_pixel_value))/(np.max(B_pixel_value)-np.min(B_pixel_value))
+
+
+
     pixel_total_R.append(R_pixel_value.tolist())
     pixel_total_G.append(G_pixel_value.tolist())
     pixel_total_B.append(B_pixel_value.tolist())
+
+
 
     fig, ax = plt.subplots(2,3, figsize=(15,15), dpi = 500) #, figsize=(15,15)) #figsize 15 15 to save dpi 500
     fig.suptitle(filename)
@@ -208,9 +227,9 @@ for i in range(0, len(imgfiles)):
     ax[1,0].hist(R_pixel_value, color = 'r')
     ax[1,1].hist(G_pixel_value, color = 'g')
     ax[1,2].hist(B_pixel_value, color = 'b') # bins = 255
-    ax[1,0].set_xlim([0, 255])
-    ax[1,1].set_xlim([0, 255])
-    ax[1,2].set_xlim([0, 255])
+    # ax[1,0].set_xlim([0, 255])
+    # ax[1,1].set_xlim([0, 255])
+    # ax[1,2].set_xlim([0, 255])
     ax[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
     ax[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
     ax[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
@@ -246,9 +265,9 @@ fig_all.suptitle('RGB Histogram')
 ax_all[0].hist(flatten(pixel_total_R), color='r')
 ax_all[1].hist(flatten(pixel_total_G), color='g')
 ax_all[2].hist(flatten(pixel_total_B), color='b')
-ax_all[0].set_xlim([0,255])
-ax_all[1].set_xlim([0,255])
-ax_all[2].set_xlim([0,255])
+# ax_all[0].set_xlim([0,255])
+# ax_all[1].set_xlim([0,255])
+# ax_all[2].set_xlim([0,255])
 ax_all[0].set_title('R, Count: ' + str(len(flatten(pixel_total_R))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_R))))
 ax_all[1].set_title('G, Count: ' + str(len(flatten(pixel_total_G))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_G))))
 ax_all[2].set_title('B, Count: ' + str(len(flatten(pixel_total_B))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_B))))
