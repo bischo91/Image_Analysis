@@ -79,7 +79,6 @@ def detect_panel(img, img_original):
             if (len(approx) == 4):
                 # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
                 corners = approx
-
     try: corners
     except NameError: corners = None
     if corners is not None:
@@ -90,7 +89,7 @@ def detect_panel(img, img_original):
     else:
         (x1, y1), (x2, y2), (x3, y3), (x4, y4), detect_success = detect_panel_by_label(img)
         if detect_success==False:
-            return [], False
+            print('label method failed')
     if sum([x1, x2, x3, x4, y1, y2, y3, y4])>0:
         hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
         hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
@@ -124,7 +123,40 @@ def detect_panel(img, img_original):
     else:
         img_detect = False
         img_resized = []
-    return img_resized, img_detect
+    return [x1,x2,x3,x4,y1,y2,y3,y4], img_resized, img_detect
+
+def previous_dimension(img,img_original,dim):
+    x1,x2,x3,x4,y1,y2,y3,y4 = dim[0], dim[1], dim[2], dim[3], dim[4], dim[5], dim[6], dim[7]
+    hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
+    hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
+    hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
+
+    if hxy_1>hxy_2:
+        hx = hxy_2
+        hy = hxy_1
+        dh = hxy_1
+        d = x1-x2
+    else:
+        hx = hxy_1
+        hy = hxy_2
+        dh = hxy_2
+        d = y1-y2
+    theta = np.arcsin(d/dh)*180/np.pi
+    top_left_x = min([x1,x2,x3,x4])
+    top_left_y = min([y1,y2,y3,y4])
+    bot_right_x = max([x1,x2,x3,x4])
+    bot_right_y = max([y1,y2,y3,y4])
+    img_original = img_original[top_left_y:bot_right_y, top_left_x:bot_right_x]
+    nx = np.shape(np.array(img_original))[1]
+    ny = np.shape(np.array(img_original))[0]
+    resize_dim_x_1 = math.ceil((nx - hx)/2)
+    resize_dim_x_2 = resize_dim_x_1 + math.floor(hx)
+    resize_dim_y_1 = math.ceil((ny - hy)/2)
+    resize_dim_y_2 = resize_dim_y_1 + math.floor(hy)
+    img_original = imutils.rotate(img_original, theta)
+    img_resized = img_original[resize_dim_y_1:resize_dim_y_2, resize_dim_x_1:resize_dim_x_2]
+    img_detect = True
+    return img_resized
 
 def find_vg_from_filename(filename):
     plus = re.findall(r'%s(\d+)' % 'VG_\+', filename.upper())
@@ -266,6 +298,16 @@ def create_excel_sheet(pixel_data, new_img_file, filename, k):
     sheet_overall.cell(row=k+2, column=2).value = (1 -(pixel_std/pixel_average))*100
     sheet_overall.cell(row=k+2, column=3).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
 
+def rearrange_files_by_vg(fileinput):
+    Vg_list = []
+    for filename in fileinput:
+        Vg_list.append(int(find_vg_from_filename(filename)))
+    Vg_list_sorted = sorted(Vg_list)
+    fileoutput = []
+    for Vg in Vg_list_sorted:
+        fileoutput.append(fileinput[Vg_list.index(Vg)])
+    return fileoutput
+
 # Set path
 root = tkinter.Tk()
 path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
@@ -273,18 +315,16 @@ root.withdraw()
 # pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\test images".replace("\\","/")
 # path = os.path.abspath(pathstr)
 
-
 # Read all files in the folder
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 allfiles = [f for f in allfiles if 'cropped' not in f and 'grid' not in f]
 imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
-
+imgfiles = rearrange_files_by_vg(imgfiles)
 # Make Excel Sheet
 wb = openpyxl.Workbook()
 sheet_overall = wb.active
 k=0
-
-prev_dim = [0,0,0,0]
+prev_dim = [0, 0, 0, 0, 0, 0, 0, 0]
 
 for j in range(0, len(imgfiles)):
     filename = imgfiles[j]
@@ -296,29 +336,30 @@ for j in range(0, len(imgfiles)):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
-    [img_resized, img_detect] = detect_panel(img, img_original)
+    [new_dim, img_resized, img_detect] = detect_panel(img, img_original)
     if img_detect == False or 'grid' in filename or 'cropped' in filename or np.shape(img_resized)[0]<1000 or np.shape(img_resized)[1]<1000:
-        print(filename + ': Detection Fail')
+        print(filename + ': Detection using prev dim')
+        img_resized = previous_dimension(img,img_original,prev_dim)
     else:
+        prev_dim = new_dim
+    print(filename + ': Complete')
+    with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
+    cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+    img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
 
-        print(filename + ': Complete')
-        with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
-        cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
-        img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
+    l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
+    w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
+    # Define grid
+    grid_x = 7
+    grid_y = 9
+    grid_size = 50
+    # Extract pixel value for each grid
+    [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
 
-        l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
-        w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
-        # Define grid
-        grid_x = 7
-        grid_y = 9
-        grid_size = 50
-        # Extract pixel value for each grid
-        [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
-
-        new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
-        cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
-        create_excel_sheet(pixel_data, new_img_file, filename, k)
-        k+=1
+    new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
+    cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+    create_excel_sheet(pixel_data, new_img_file, filename, k)
+    k+=1
 try:
     name_index = filename.upper().index('VD')
     sheet_overall.auto_filter.ref = "A1:C13"
