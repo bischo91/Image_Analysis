@@ -20,6 +20,7 @@ from scipy.ndimage import label
 import math
 from skimage.morphology import skeletonize, medial_axis
 import seaborn as sb
+from sklearn.cluster import KMeans
 
 class ImageProcess:
     def __init__(self, img):
@@ -160,7 +161,7 @@ def line_intersection(line1, line2, polar=False):
 # Set current directory as path (where the py file is is the directory)
 path = os.getcwd()
 
-path = os.path.abspath(r"C:\Users\bisch\Desktop\Mattrix\image_process\CNT\test_img\test".replace("\\","/"))
+path = os.path.abspath(r"C:\Users\bisch\Desktop\Mattrix\image_process\CNT\test_img\test\test1".replace("\\","/"))
 # path = os.path.abspath("G:\Shared drives\MTTX_Team Drive\R&D Projects\Image Analysis\Test Images for Analysis\Standard Images for Recipe Testing")
 onlyfiles = [ f for f in listdir(path) if isfile(join(path,f)) ]
 i=0
@@ -274,6 +275,8 @@ for n in range(0, len(onlyfiles)):
         long_interaction_list =[]
         Y=[]
         X=[]
+
+        x_y_coord = []
         for i in range(2, img_2.shape[0]-2):
             for j in range(2, img_2.shape[1]-2):
                 # if img_2[i,j] and img_2[i-1, j] and img_2[i+1, j] and img_2[i,j+1] and img_2[i,j-1]:
@@ -322,7 +325,8 @@ for n in range(0, len(onlyfiles)):
                         # print('For Radius: ' + str(k) + ', # of interaction: ' +  str(num_of_interaction))
 
                     if sum_of_interaction_long>45 and sum_of_interaction_short>5:
-                        img_cir[i,j] = 1
+                        # img_cir[i,j] = 1
+                        x_y_coord.append([j,i])
                         counter_cir +=1
                     long_interaction_list.append(sum_of_interaction_long)
                     short_interaction_list.append(sum_of_interaction_short)
@@ -345,9 +349,29 @@ for n in range(0, len(onlyfiles)):
         print('Median # of int_long: ' + str(np.median(long_interaction_list)))
         print('Max # of int_long: ' + str(np.max(long_interaction_list)))
         print('Min # of int_long: ' + str(np.min(long_interaction_list)))
-        #
+        print(x_y_coord)
+
+        cost = []
+        n_clu = range(1, 2)
+        for n in n_clu:
+            kmeans =KMeans(n_clusters = n, max_iter = 500).fit(x_y_coord)
+            cost.append(kmeans.inertia_)
+
+
+        cost = np.array(cost)
+        ind = np.where(cost == np.min(cost))
+        ind = ind[0][0]
+        n_k = n_clu[ind]
+        n_k = 25
+        kmeans = KMeans(n_clusters = n_k, max_iter = 500).fit(x_y_coord)
+        # kmeans =KMeans(n_clusters = 5, max_iter = 500).fit(x_y_coord)
+
+        print(kmeans.cluster_centers_)
+        for coord_center in kmeans.cluster_centers_:
+            # img_cir[round(coord_center[0]),round(coord_center[1])]=1
+            img_cir = cv2.circle(img_cir, (round(coord_center[0]),round(coord_center[1])), 25, (255,0,0), 2)
         # plt.figure()
-        #
+        print(len(kmeans.cluster_centers_))
         # plt.scatter(X,Y)
 
 

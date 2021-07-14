@@ -130,7 +130,7 @@ class PostImageProcess:
                 box_avg.append(np.mean(box))
                 uniformity_array[ii:ii+box_size, jj:jj+box_size] = np.ones(box.shape)*np.mean(box)
         return uniformity_array, np.std(box_avg)
-        
+
     def uniformity(img):
         N = 500 #dimensionality of the image matrix
         z = []

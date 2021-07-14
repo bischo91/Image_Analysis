@@ -25,12 +25,14 @@ import tkinter.filedialog
 class ImageProcess:
     def image_select_by_threshold(img):
         # Take one of R/G/B pixel values and binarize by thresholding
-
-        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 0)
         img = cv2.GaussianBlur(img, (3, 3), 0) # was (9,9) before
+        # kernel = np.ones((3,3), np.uint8)
+        # img = cv2.erode(img, kernel, iterations=3)
+        # img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,19,-5)
+        img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,17,-5)
+        # img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 0)
 
-        ret, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
+        # ret, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         img = (img==255) # Change img_i to True/False arrays
         return img
 
@@ -43,7 +45,6 @@ class ImageProcess:
             for m in range(0, np.shape(img)[1]):
                 img[n,m] = (max(img_original_RGB[n,m,:]) == img_original_RGB[n,m,i])
         img = (img==1)
-
         return img
 
     def detect_pixel_boxes(img):
@@ -54,7 +55,7 @@ class ImageProcess:
         # valid_label = set()
         bbox_list = []
         for prop in properties:
-            if prop.area>700:
+            if prop.area>500:
                 # valid_label.add(prop.label)
                 bbox_list.append(prop.bbox)
         return bbox_list
@@ -68,44 +69,21 @@ def uniformity_cal(values):
     return uniformity
 
 
-def detect_calculate_pixel(img, i):
+def detect_calculate_pixel(img_i):
     # Takes image and color (R/G/B) and returns filtered image and average pixel values on the box
     # i = 0, 1, 2 for R, G, B respectively
-    img_i = img[:,:,i]
-    img_o = img.copy()
-    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    # img_i = img[:,:,i]
+    img_o = img_i.copy()
+    img_gray = cv2.cvtColor(img_i, cv2.COLOR_RGB2GRAY)
     # Seleting from image thresholding
     img_i_th = ImageProcess.image_select_by_threshold(img_gray)
-    # Selecting from maximum color (R/G/B)
-    img_i_co = ImageProcess.image_select_by_color(img_i, img, i)
-    img_i = np.bitwise_and(img_i_co, img_i_th)
+    plt.imshow(img_i_th)
+    plt.show()
 
-    # For special blue case
-    # if i == 2:
-    #     img_R = img[:,:,0]
-    #     img_G = img[:,:,1]
-    #     # img_i = img_i_th
-    #     # Seleting from image thresholding
-    #     img_i_R = np.bitwise_and(ImageProcess.image_select_by_color(img_R, img, 0), ImageProcess.image_select_by_threshold(img_R))
-    #     img_i_G = np.bitwise_and(ImageProcess.image_select_by_color(img_G, img, 1), ImageProcess.image_select_by_threshold(img_G))
-    #     img_i_RG = np.bitwise_or(img_i_R, img_i_G)
-    #     # plt.imshow(img_i_RG)
-    #     # plt.show()
-    #     # Selecting from maximum color (R/G/B)
-    #     img_i_th = ImageProcess.image_select_by_threshold(img[:,:,i])
-    #     img_i = np.bitwise_and((img_i_th^img_i_RG),img_i_th)
-        # plt.imshow(img_i)
-        # plt.show()
-
-
-
-
-    # Combine Selected Image (Selection from threshold AND Selection from maximum color)
-
-    # Detect bounding boxes of displayed pixels
-    bbox_list = ImageProcess.detect_pixel_boxes(img_i)
+    bbox_list = ImageProcess.detect_pixel_boxes(img_i_th)
     pixel_value = np.zeros(len(bbox_list))
     k=0
+
     for bbox in bbox_list:
         h = (bbox[2] - bbox[0])*0.25
         w = (bbox[3] - bbox[1])*0.3
@@ -133,6 +111,18 @@ def detect_calculate_pixel(img, i):
         k += 1
 
     return img_o, pixel_value
+
+
+def detect_pixel_boxes(img):
+    labeled_array, num_features = label(img)
+    properties = measure.regionprops(labeled_array)
+    valid_label = set()
+    bbox_list = []
+    for prop in properties:
+        if prop.area>750:
+            valid_label.add(prop.label)
+            bbox_list.append(prop.bbox)
+    return bbox_list
 
 
 def detect_calculate_pixel_2(img, i):
@@ -186,12 +176,7 @@ allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 imgfiles = [f for f in allfiles if (f.upper().endswith('.BMP') or f.upper().endswith('.PNG')) and 'Uniformity' not in f]
 
 
-pixel_total_R = []
-pixel_total_G = []
-pixel_total_B = []
-pixel_total_R_2 = []
-pixel_total_G_2 = []
-pixel_total_B_2 = []
+pixel_total = []
 
 for i in range(0, len(imgfiles)):
     filename = imgfiles[i]
@@ -199,44 +184,24 @@ for i in range(0, len(imgfiles)):
     # img = cv2.imread(path+'/'+filename)
     img_original = cv2.imread(path+'/'+filename)
     img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
-    img_R, R_pixel_value = detect_calculate_pixel(img_original, 0)
-    img_G, G_pixel_value = detect_calculate_pixel(img_original, 1)
-    img_B, B_pixel_value = detect_calculate_pixel(img_original, 2)
+    img_o, pixel_value = detect_calculate_pixel(img_original)
 
-    pixel_total_R.append(R_pixel_value.tolist())
-    pixel_total_G.append(G_pixel_value.tolist())
-    pixel_total_B.append(B_pixel_value.tolist())
+    pixel_total.append(pixel_value.tolist())
 
-    fig, ax = plt.subplots(2,3, figsize=(15,15), dpi = 500) #, figsize=(15,15)) #figsize 15 15 to save dpi 500
+    fig, ax = plt.subplots(1,2, figsize=(15,15), dpi = 500) #, figsize=(15,15)) #figsize 15 15 to save dpi 500
     fig.suptitle(filename)
-    ax[0,0].imshow(img_R)
-    ax[0,0].set_axis_off()
-    ax[0,1].imshow(img_G)
-    ax[0,1].set_axis_off()
-    ax[0,2].imshow(img_B)
-    ax[0,2].set_axis_off()
+    ax[0].imshow(img_o)
+    ax[0].set_axis_off()
 
-    ax[1,0].hist(R_pixel_value, color = 'r')
-    ax[1,1].hist(G_pixel_value, color = 'g')
-    ax[1,2].hist(B_pixel_value, color = 'b') # bins = 255
-    ax[1,0].set_xlim([0, 255])
-    ax[1,1].set_xlim([0, 255])
-    ax[1,2].set_xlim([0, 255])
-    ax[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
-    ax[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
-    ax[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
+    ax[1].hist(pixel_value)
+    ax[1].set_xlim([0, 255])
+    ax[1].set_title('Count: ' + str(np.shape(pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(pixel_value)))
     fig.savefig(path + '/Uniformity_method_1' + filename.replace('bmp','png'))
 
 
-fig_all, ax_all = plt.subplots(3,1, figsize=(10,10), dpi=100)
+fig_all, ax_all = plt.subplots(1,1, figsize=(10,10), dpi=100)
 fig_all.suptitle('RGB Histogram')
-ax_all[0].hist(flatten(pixel_total_R), color='r', bins = math.ceil(255/5))
-ax_all[1].hist(flatten(pixel_total_G), color='g', bins =math.ceil(255/5))
-ax_all[2].hist(flatten(pixel_total_B), color='b', bins =math.ceil(255/5))
-ax_all[0].set_xlim([0,255])
-ax_all[1].set_xlim([0,255])
-ax_all[2].set_xlim([0,255])
-ax_all[0].set_title('R, Count: ' + str(len(flatten(pixel_total_R))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_R))))
-ax_all[1].set_title('G, Count: ' + str(len(flatten(pixel_total_G))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_G))))
-ax_all[2].set_title('B, Count: ' + str(len(flatten(pixel_total_B))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total_B))))
+ax_all.hist(flatten(pixel_total))
+ax_all.set_xlim([0,255])
+ax_all.set_title('Count: ' + str(len(flatten(pixel_total))) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(flatten(pixel_total))))
 fig_all.savefig(path+ '/Uniformity_all.png')

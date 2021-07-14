@@ -130,7 +130,6 @@ def previous_dimension(img,img_original,dim):
     hxy_1 = np.sqrt((x1-x2)**2 + (y1-y2)**2)
     hxy_2 = np.sqrt((x2-x3)**2 + (y2-y3)**2)
     hx = np.sqrt((x1-x2)**2 + (y1-y2)**2)
-
     if hxy_1>hxy_2:
         hx = hxy_2
         hy = hxy_1
@@ -159,9 +158,9 @@ def previous_dimension(img,img_original,dim):
     return img_resized
 
 def find_vg_from_filename(filename):
-    plus = re.findall(r'%s(\d+)' % 'VG_\+', filename.upper())
-    minus = re.findall(r'%s(\d+)' % 'VG_-', filename.upper())
-    zero = re.findall(r'%s(\d+)' % 'VG_', filename.upper())
+    plus = re.findall(r'%s(\d*\.?\d+)' % 'VG_\+', filename.upper())
+    minus = re.findall(r'%s(\d*\.?\d+)' % 'VG_-', filename.upper())
+    zero = re.findall(r'%s(\d*\.?\d+)' % 'VG_', filename.upper())
     if plus != []:
         return '+'+plus[0]
     elif minus != []:
@@ -169,9 +168,9 @@ def find_vg_from_filename(filename):
     elif zero != []:
         return 0
     else:
-        plus = re.findall(r'%s(\d+)' % 'VG \+', filename.upper())
-        minus = re.findall(r'%s(\d+)' % 'VG -', filename.upper())
-        zero = re.findall(r'%s(\d+)' % 'VG ', filename.upper())
+        plus = re.findall(r'%s(\d*\.?\d+)' % 'VG \+', filename.upper())
+        minus = re.findall(r'%s(\d*\.?\d+)' % 'VG -', filename.upper())
+        zero = re.findall(r'%s(\d*\.?\d+)' % 'VG ', filename.upper())
         if plus != []:
             return '+'+plus[0]
         elif minus != []:
@@ -294,14 +293,14 @@ def create_excel_sheet(pixel_data, new_img_file, filename, k):
     sheet_overall.cell(row=1, column=1).value = 'Vg (V)'
     sheet_overall.cell(row=1, column=2).value = 'Uniformity'
     sheet_overall.cell(row=1, column=3).value = 'Filtered Uniformity'
-    sheet_overall.cell(row=k+2, column=1).value = int(Vg)
+    sheet_overall.cell(row=k+2, column=1).value = float(Vg)
     sheet_overall.cell(row=k+2, column=2).value = (1 -(pixel_std/pixel_average))*100
     sheet_overall.cell(row=k+2, column=3).value = (1 -(np.std(pixel_average_filtered)/np.average(pixel_average_filtered)))*100
 
 def rearrange_files_by_vg(fileinput):
     Vg_list = []
     for filename in fileinput:
-        Vg_list.append(int(find_vg_from_filename(filename)))
+        Vg_list.append(float(find_vg_from_filename(filename)))
     Vg_list_sorted = sorted(Vg_list)
     fileoutput = []
     for Vg in Vg_list_sorted:
@@ -312,20 +311,19 @@ def rearrange_files_by_vg(fileinput):
 root = tkinter.Tk()
 path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
 root.withdraw()
-# pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\test images".replace("\\","/")
-# path = os.path.abspath(pathstr)
 
 # Read all files in the folder
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 allfiles = [f for f in allfiles if 'cropped' not in f and 'grid' not in f]
 imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
 imgfiles = rearrange_files_by_vg(imgfiles)
+
 # Make Excel Sheet
 wb = openpyxl.Workbook()
 sheet_overall = wb.active
 k=0
 prev_dim = [0, 0, 0, 0, 0, 0, 0, 0]
-
+too_dark = False
 for j in range(0, len(imgfiles)):
     filename = imgfiles[j]
     # Load image
@@ -337,8 +335,9 @@ for j in range(0, len(imgfiles)):
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
     [new_dim, img_resized, img_detect] = detect_panel(img, img_original)
-    if img_detect == False or 'grid' in filename or 'cropped' in filename or np.shape(img_resized)[0]<1000 or np.shape(img_resized)[1]<1000:
-        print(filename + ': Detection using prev dim')
+    if img_detect == False or np.shape(img_resized)[0]<2400 or np.shape(img_resized)[1]<1900 or too_dark==True:
+        # print(filename + ': Detection using prev dim')
+        too_dark = True
         img_resized = previous_dimension(img,img_original,prev_dim)
     else:
         prev_dim = new_dim
