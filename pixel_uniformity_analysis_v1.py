@@ -67,7 +67,6 @@ def uniformity_cal(values):
     uniformity = 100*(1-(std/avg))
     return uniformity
 
-
 def detect_calculate_pixel(img, i):
     # Takes image and color (R/G/B) and returns filtered image and average pixel values on the box
     # i = 0, 1, 2 for R, G, B respectively
@@ -134,7 +133,6 @@ def detect_calculate_pixel(img, i):
 
     return img_o, pixel_value
 
-
 def detect_calculate_pixel_2(img, i):
     # All pixels
     img_i = img[:,:,i]
@@ -172,7 +170,6 @@ def detect_calculate_pixel_2(img, i):
 
 def flatten(list_in):
     return [item for elem in list_in for item in elem]
-
 
 root = tkinter.Tk()
 path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')

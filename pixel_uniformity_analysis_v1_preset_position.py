@@ -67,7 +67,7 @@ def uniformity_cal(values):
     uniformity = 100*(1-(std/avg))
     return uniformity
 
-def pixel_value_from_bbox(bbox_list, img_o):
+def pixel_value_from_bbox(bbox_list, img_o, img_gray):
     # Takes bounding box list and image and return pixel values and the image showing boxes
     pixel_value = np.zeros(len(bbox_list))
     k=0
@@ -81,6 +81,7 @@ def pixel_value_from_bbox(bbox_list, img_o):
         img_ind = img_gray[min_row:max_row, min_col:max_col]
         circle_detect = cv2.HoughCircles(cv2.blur(img_ind,(3,3)), \
         cv2.HOUGH_GRADIENT, 1.5, 1, param1 = 100, param2 = 0.5, minRadius = 1, maxRadius =-1)
+        circle_detect = None
         if circle_detect is not None:
             ret, img_ind = cv2.threshold(img_ind, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             ind_pixel_value=[]
@@ -129,15 +130,12 @@ def detect_calculate_pixel(img, i, preset_bbox):
         # plt.imshow(img_i)
         # plt.show()
 
-    if len(preset_bbox)>0:
-        # Detect bounding boxes of displayed pixels
-        bbox_list = ImageProcess.detect_pixel_boxes(img_i)
-    else:
-        bbox_list = preset_bbox
+    if preset_bbox == []:
+        preset_bbox = ImageProcess.detect_pixel_boxes(img_i)
 
-    pixel_value, img_o = pixel_value_from_bbox(bbox_list, img_o)
+    pixel_value, img_o = pixel_value_from_bbox(preset_bbox, img_o, img_gray)
 
-    return img_o, pixel_value, bbox_list
+    return img_o, pixel_value, preset_bbox
 
 
 def detect_calculate_pixel_2(img, i):
@@ -180,39 +178,39 @@ def flatten(list_in):
 
 
 root = tkinter.Tk()
-path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
+# path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
+ref_file = tkinter.filedialog.askopenfilename()
 root.withdraw()
 # pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap_photos\microscope pixels\test".replace("\\","/")
 # path = os.path.abspath(pathstr)
+
+ref_filename = ref_file.split('/').pop()
+path = ref_file.replace(ref_filename,'')
 
 # Read all files in the folder
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 # imgfiles = [f for f in allfiles if f.upper().endswith('.PNG')]
 imgfiles = [f for f in allfiles if (f.upper().endswith('.BMP') or f.upper().endswith('.PNG')) and 'Uniformity' not in f]
 
-
 pixel_total_R = []
 pixel_total_G = []
 pixel_total_B = []
-pixel_total_R_2 = []
-pixel_total_G_2 = []
-pixel_total_B_2 = []
 
-print(imgfiles)
+img_original = cv2.imread(path+'/'+ref_filename)
+img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
+
+img_R, R_pixel_value, bbox_list_R = detect_calculate_pixel(img_original, 0, [])
+img_G, G_pixel_value, bbox_list_G = detect_calculate_pixel(img_original, 1, [])
+img_B, B_pixel_value, bbox_list_B = detect_calculate_pixel(img_original, 2, [])
+
 for i in range(0, len(imgfiles)):
-    filename = imgfiles[i]
     # Load image
-    # img = cv2.imread(path+'/'+filename)
+    filename = imgfiles[i]
     img_original = cv2.imread(path+'/'+filename)
     img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
-
-    img_R, R_pixel_value, bbox_list = detect_calculate_pixel(img_original, 0, preset_bbox)
-    img_G, G_pixel_value, bbox_list = detect_calculate_pixel(img_original, 1, preset_bbox)
-    img_B, B_pixel_value, bbox_list = detect_calculate_pixel(img_original, 2, preset_bbox)
-
-    if "VG-8V" in filename:
-        preset_bbox = bbox_list
-
+    img_R, R_pixel_value, bbox_list = detect_calculate_pixel(img_original, 0, bbox_list_R)
+    img_G, G_pixel_value, bbox_list = detect_calculate_pixel(img_original, 1, bbox_list_G)
+    img_B, B_pixel_value, bbox_list = detect_calculate_pixel(img_original, 2, bbox_list_B)
 
     pixel_total_R.append(R_pixel_value.tolist())
     pixel_total_G.append(G_pixel_value.tolist())
