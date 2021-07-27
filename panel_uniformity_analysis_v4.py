@@ -77,7 +77,6 @@ def detect_panel(img, img_original):
             approx = cv2.approxPolyDP(cnt, 0.09 * cv2.arcLength(cnt, True), True)
     # was 0.009
             if (len(approx) == 4):
-                # cv2.drawContours(img_original, [approx], 0, (255,0,0), 25)
                 corners = approx
     try: corners
     except NameError: corners = None
@@ -182,25 +181,14 @@ def find_vg_from_filename(filename):
 
 def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
     img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
-    l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
-    w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
-    grid_y = 9
-    grid_x = 7
-    grid_size = 50
-    n = grid_y+1
-    m = grid_x+1
-    dl = l/n
-    dw = w/m
-    coordinate_list =[]
+    dl = np.shape(np.array(img_resized))[0]/(grid_y+1)
+    dw = np.shape(np.array(img_resized))[1]/(grid_x+1)
     pixel_average_list = []
     pixel_std_list = []
     pixel_data = []
-
     # for grid
-    for p in range(1, n):
-        for q in range(1, m):
-            # position_x.append(q*dw)
-            coordinate_list.append([p*dl, q*dw])
+    for p in range(1, grid_y+1):
+        for q in range(1, grid_x+1):
             x_center = round(p*dl)
             y_center = round(q*dw)
             x_max = int(x_center + (grid_size/2))
@@ -220,7 +208,7 @@ def pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size):
             pixel_data.append([grid_num, np.average(pixel_value_list), np.std(pixel_value_list)])
     return pixel_data, img_resized
 
-def create_excel_sheet(pixel_data, new_img_file, filename, k):
+def create_excel_sheet(pixel_data, new_img_file, img_resized, filename, k, grid_x, grid_y, grid_size):
     Vg = find_vg_from_filename(filename)
     if Vg == None:
         Vg = filename
@@ -255,7 +243,8 @@ def create_excel_sheet(pixel_data, new_img_file, filename, k):
     pixel_std_filtered = []
     not_counting = []
     pct_rng = 100
-
+    dl = np.shape(np.array(img_resized))[0]/(grid_y+1)
+    dw = np.shape(np.array(img_resized))[1]/(grid_x+1)
     for j in pixel_data:
         if pixel_median*((100-pct_rng)/100) < j[1] < pixel_median*((100+pct_rng)/100) \
             and j[2]<2*np.average([i[2] for i in pixel_data]) and j[1]*1.5>j[2]:
@@ -264,6 +253,25 @@ def create_excel_sheet(pixel_data, new_img_file, filename, k):
             pixel_std_filtered.append(j[2])
         else:
             not_counting.append(j[0])
+            # Optional starting here ---------------------------------
+            row = int(j[0].replace('X','')[0])
+            col = int(j[0].replace('X','')[1])
+            x_center = round(row*dl)
+            y_center = round(col*dw)
+            x_max = int(x_center + (grid_size/2))
+            x_min = int(x_center - (grid_size/2))
+            y_max = int(y_center + (grid_size/2))
+            y_min = int(y_center - (grid_size/2))
+            # for region
+            for ii in range(x_min, x_max):
+                for jj in range(y_min, y_max):
+                    if abs(ii-x_min) < 5 or abs(ii-x_max) <5:
+                        img_resized[ii,jj] = [255, 255, 255]
+                    if abs(jj-y_min) < 5 or abs(jj-y_max) <5:
+                        img_resized[ii,jj] = [255, 255, 255]
+            # Optional ending here ---------------------------------
+
+    cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
     sheet.cell(row=2, column=6).value = pixel_average
     sheet.cell(row=3, column=6).value = pixel_std
     sheet.cell(row=4, column=6).value = min([j[1] for j in pixel_data])
@@ -336,28 +344,22 @@ for j in range(0, len(imgfiles)):
     # Detect panel region
     [new_dim, img_resized, img_detect] = detect_panel(img, img_original)
     if img_detect == False or np.shape(img_resized)[0]<2400 or np.shape(img_resized)[1]<1800 or too_dark==True:
-        print(filename + ': Detection using prev dim')
+        print(filename + ': Complete, Detection using prev dim')
         too_dark = True
         img_resized = previous_dimension(img,img_original,prev_dim)
     else:
         prev_dim = new_dim
-    print(filename + ': Complete')
+        print(filename + ': Complete')
     with_no_grid = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
     cv2.imwrite(with_no_grid, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
-    img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
-
-    l = np.shape(np.array(img_gray))[0] # number of pixels in y dir
-    w = np.shape(np.array(img_gray))[1] # number of pixels in x dir
     # Define grid
     grid_x = 7
     grid_y = 9
     grid_size = 50
     # Extract pixel value for each grid
     [pixel_data, img_resized] = pixel_value_for_grid(img_resized, grid_x, grid_y, grid_size)
-
     new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_grid.jpg'
-    cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
-    create_excel_sheet(pixel_data, new_img_file, filename, k)
+    create_excel_sheet(pixel_data, new_img_file, img_resized, filename, k, grid_x, grid_y, grid_size)
     k+=1
 try:
     name_index = filename.upper().index('VD')

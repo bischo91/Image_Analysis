@@ -136,7 +136,7 @@ def detect_TEG(img, img_original, dim):
         bot_right_y = dim[4]
 
     dy = math.ceil(abs(top_left_y-bot_right_y)*0.01)
-    dx = math.ceil(abs(top_left_x-bot_right_x)*0.3)
+    dx = math.ceil(abs(top_left_x-bot_right_x)*1)
     img_original = img_original[top_left_y-dy:bot_right_y+dy, top_left_x-dx:bot_right_x+dx]
     img_resized = imutils.rotate(img_original, theta)
 
