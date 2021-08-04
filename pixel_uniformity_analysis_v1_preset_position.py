@@ -234,7 +234,8 @@ for i in range(0, len(imgfiles)):
     ax[1,0].set_title('R, Count: ' + str(np.shape(R_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(R_pixel_value)))
     ax[1,1].set_title('G, Count: ' + str(np.shape(G_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(G_pixel_value)))
     ax[1,2].set_title('B, Count: ' + str(np.shape(B_pixel_value)[0]) + ', Uniformity: ' + "{:.2f}".format(uniformity_cal(B_pixel_value)))
-    fig.savefig(path + '/Uniformity_method_1' + filename.replace('bmp','png'))
+    fig.savefig(path + '/Uniformity_'+ filename.replace('bmp','') +\
+     '(RGB)=(' + str(round(np.mean(R_pixel_value)))+','+str(round(np.mean(G_pixel_value)))+','+str(round(np.mean(B_pixel_value)))+').png')
 
 
 fig_all, ax_all = plt.subplots(3,1, figsize=(10,10), dpi=100)
