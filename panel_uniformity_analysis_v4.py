@@ -343,7 +343,10 @@ for j in range(0, len(imgfiles)):
     img_original = mpimg.imread(path+'/'+filename)
     # Detect panel region
     [new_dim, img_resized, img_detect] = detect_panel(img, img_original)
-    if img_detect == False or np.shape(img_resized)[0]<2400 or np.shape(img_resized)[1]<1800 or too_dark==True:
+    # print(img_detect)
+    # print(np.shape(img_resized))
+    # print(too_dark)
+    if img_detect == False or np.shape(img_resized)[0]<2100 or np.shape(img_resized)[1]<1500 or too_dark==True:
         print(filename + ': Complete, Detection using prev dim')
         too_dark = True
         img_resized = previous_dimension(img,img_original,prev_dim)
