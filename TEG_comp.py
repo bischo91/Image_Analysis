@@ -63,7 +63,7 @@ def feature_removal(img_in, eccentricity_min, area_max, area_min):
 
 # Set current directory as path (where the py file is is the directory)
 path = os.getcwd()
-path = os.path.abspath("C:/CS/python_ruby/image_process/RGB/TEG/TEG 17/exposure time 1_60/didn'twork")
+path = os.path.abspath("C:/Users/bisch/Downloads/after encap/TEG")
 
 
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]

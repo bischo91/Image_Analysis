@@ -27,6 +27,12 @@ import tkinter.filedialog
 import re
 
 
+wb = openpyxl.Workbook()
+sheet = wb.active
+sheet.cell(row=1, column=1).value = 'TEG #'
+sheet.cell(row=1, column=2).value = 'Average (5X5)'
+sheet.cell(row=1, column=3).value = 'Peak'
+
 def find_vg_from_filename(filename):
     plus = re.findall(r'%s(\d*\.?\d+)' % 'VG_\+', filename.upper())
     minus = re.findall(r'%s(\d*\.?\d+)' % 'VG_-', filename.upper())
@@ -142,10 +148,77 @@ def detect_TEG(img, img_original, dim):
 
     return img_resized, [theta, top_left_x, top_left_y, bot_right_x, bot_right_y]
 
+def single_TEG(img_resized):
+
+    line_max = []
+    # Horizontal linear maximum
+    for k in range(0, np.shape(img_resized)[0]):
+        line_max.append(np.max(img_resized[k]))
+
+    # average of maxima on each line
+    # plt.figure()
+    # plt.imshow(img_resized)
+    fig_TEG, ax_TEG = plt.subplots(24, 1)
+
+    max_avg = np.average(line_max)
+    # Tighten vertical dimension
+    l = 0
+    while np.max(img_resized[l]) < 0.9*max_avg:
+        img_resized = np.delete(img_resized, l, 0)
+        l += 1
+    k = np.shape(img_resized)[0]-1
+    while np.max(img_resized[k]) < 0.9*max_avg:
+        img_resized = np.delete(img_resized, k, 0)
+        k -= 1
+    # Define new dimension after tightening
+    new_y = np.shape(img_resized)[0]
+    new_x = np.shape(img_resized)[1]
+    step = round(np.shape(img_resized)[0]/24)
+    midpoint = round(step/2)
+
+    # For each TEG, find max and get pixel values around it
+    for i in range(0, 24):
+        img_TEG = img_resized[i*step:(i+1)*step, 0:new_x]
+        img_TEG_GRAY = cv2.cvtColor(img_TEG, cv2.COLOR_RGB2GRAY)
+        # Define img_TEG_GRAY_temp after trimming img_TEG_GRAY by 4 to avoid finding maximum on edge
+        img_TEG_GRAY_temp = img_TEG_GRAY[10:np.shape(img_TEG_GRAY)[0]-10, \
+                            10:np.shape(img_TEG_GRAY)[1]-10]
+        # Find maximum point
+        peak = np.max(img_TEG_GRAY_temp[midpoint])
+        # Find the index of the maximum
+        peak_index = np.where(img_TEG_GRAY==peak)
+
+        y_index = peak_index[1]
+        x_index = peak_index[0]
+        y_center = y_index[round(len(y_index)/2)]
+        x_center = x_index[round(len(x_index)/2)]
+        y_extend = [j+2 for j in range(y_center-4, y_center+1)]
+        x_extend_0 = [k+2 for k in range(x_center-4, x_center+1)]
+        x_extend = []
+        for x_pos in x_extend_0:
+            if x_pos < np.shape(img_TEG_GRAY)[0]:
+                x_extend.append(x_pos)
+        pixel_value_list=[]
+        for x in x_extend:
+            for y in y_extend:
+                pixel_value_list.append(img_TEG_GRAY[x,y])
+                # Mark plot with red
+                img_TEG[x,y] = [255,0,0]
+
+        img_TEG = np.asarray(img_TEG)
+        # Show img_TEG with interested area marked
+        ax_TEG[i].imshow(img_TEG)
+        ax_TEG[i].set_axis_off()
+
+        # Export to Excel
+        sheet.cell(row = i+2, column = 1).value = i+1
+        sheet.cell(row = i+2, column = 2).value = np.average(pixel_value_list)
+        sheet.cell(row = i+2, column = 3).value = np.max(pixel_value_list)
+
 
 # Set current directory as path (where the py file is is the directory)
 path = os.getcwd()
-path = os.path.abspath("C:/Users/bisch/Desktop/Mattrix/QVGA Panel/SAIT QVGA Panel/Panel 28/after encap V_SWT_TFT_+5V_exp_time_1_50s/TEG")
+path = os.path.abspath("C:/Users/bisch/Downloads/after encap/TEG")
 
 root = tkinter.Tk()
 path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
@@ -156,6 +229,8 @@ allfiles = [f for f in allfiles if 'cropped' not in f and 'grid' not in f]
 imgfiles = [f for f in allfiles if f.upper().endswith('.JPG')]
 imgfiles = rearrange_files_by_vg(imgfiles)
 prev_dim = [0, 0, 0, 0, 0]
+fig, ax = plt.subplots(1, len(imgfiles))
+
 for j in range(0, len(imgfiles)):
     filename = imgfiles[j]
     print(filename)
@@ -164,15 +239,16 @@ for j in range(0, len(imgfiles)):
     # Pixel Array
     arr = np.array(img)
     img = cv2.imread(path+'/'+filename)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img_original = mpimg.imread(path+'/'+filename)
 
-    [img_resized, dim] = detect_TEG(img, img_original, prev_dim)
+    [img_resized, dim] = detect_TEG(img_gray, img_original, prev_dim)
     prev_dim = dim
-    # fig, ax = plt.subplots(1,1)
-    # ax.set_axis_off()
-    # ax.set_title(filename)
-    # ax.imshow(img_resized)
+    img_TEG = single_TEG(img_resized)
+
     new_img_file = path+'/' + filename.replace('.jpg','').replace('.JPG', '') + '_cropped.jpg'
+    ax[j].imshow(img_resized)
+    ax[j].set_axis_off()
     cv2.imwrite(new_img_file, cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB))
+    wb.save(path + '/' + filename.replace('jpg','xlsx').replace('JPG','xlsx'))
 plt.show()
