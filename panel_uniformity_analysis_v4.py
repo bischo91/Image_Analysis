@@ -20,7 +20,6 @@ import openpyxl
 from openpyxl.drawing.image import Image
 import tkinter.filedialog
 
-
 def detect_panel_by_label(img):
     labeled_array, num_features = label(img)
     properties = measure.regionprops(labeled_array)

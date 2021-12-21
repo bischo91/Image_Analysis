@@ -9,14 +9,13 @@ from matplotlib import axes
 import matplotlib.image as mpimg
 import math
 import cv2
-import re
 import skimage
 import skimage.feature
 import skimage.viewer
-import imutils
 from skimage.measure import label, regionprops
-from scipy.ndimage import label
 from skimage import measure
+import imutils
+from scipy.ndimage import label
 import openpyxl
 from openpyxl.drawing.image import Image
 import tkinter.filedialog
@@ -95,9 +94,6 @@ def detect_calculate_pixel(img, i):
     #     img_i = np.bitwise_and((img_i_th^img_i_RG),img_i_th)
         # plt.imshow(img_i)
         # plt.show()
-
-
-
 
     # Combine Selected Image (Selection from threshold AND Selection from maximum color)
 
