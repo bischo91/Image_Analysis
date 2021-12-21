@@ -78,25 +78,6 @@ def detect_calculate_pixel(img, i):
     img_i_co = ImageProcess.image_select_by_color(img_i, img, i)
     img_i = np.bitwise_and(img_i_co, img_i_th)
 
-    # For special blue case
-    # if i == 2:
-    #     img_R = img[:,:,0]
-    #     img_G = img[:,:,1]
-    #     # img_i = img_i_th
-    #     # Seleting from image thresholding
-    #     img_i_R = np.bitwise_and(ImageProcess.image_select_by_color(img_R, img, 0), ImageProcess.image_select_by_threshold(img_R))
-    #     img_i_G = np.bitwise_and(ImageProcess.image_select_by_color(img_G, img, 1), ImageProcess.image_select_by_threshold(img_G))
-    #     img_i_RG = np.bitwise_or(img_i_R, img_i_G)
-    #     # plt.imshow(img_i_RG)
-    #     # plt.show()
-    #     # Selecting from maximum color (R/G/B)
-    #     img_i_th = ImageProcess.image_select_by_threshold(img[:,:,i])
-    #     img_i = np.bitwise_and((img_i_th^img_i_RG),img_i_th)
-        # plt.imshow(img_i)
-        # plt.show()
-
-    # Combine Selected Image (Selection from threshold AND Selection from maximum color)
-
     # Detect bounding boxes of displayed pixels
     bbox_list = ImageProcess.detect_pixel_boxes(img_i)
     pixel_value = np.zeros(len(bbox_list))
@@ -129,55 +110,17 @@ def detect_calculate_pixel(img, i):
 
     return img_o, pixel_value
 
-def detect_calculate_pixel_2(img, i):
-    # All pixels
-    img_i = img[:,:,i]
-    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    # img_R = cv2.GaussianBlur(img_R, (25, 25), 0)
-    img_i_th = ImageProcess.image_select_by_threshold(img_i)
-    img_i_co = ImageProcess.image_select_by_color(img_i, img, i)
-    img_i = np.bitwise_and(img_i_co, img_i_th)
-    bbox_list = ImageProcess.detect_pixel_boxes(img_i)
-    labeled_array, num_features = label(img_i)
-    properties = measure.regionprops(labeled_array)
-    img_i = np.zeros(np.shape(img_i), dtype = bool)
-    valid_label = set()
-    bbox_list = []
-    coords_list = []
-    for prop in properties:
-        if prop.area>750:
-            valid_label.add(prop.label)
-            bbox_list.append(prop.bbox)
-            coords_list.append(prop.coords)
-    img_i = np.in1d(labeled_array, list(valid_label)).reshape(np.shape(labeled_array))
-    img_o = img.copy()
-    pixel_value = np.zeros(len(coords_list))
-    p=0
-    for coords in coords_list:
-        pixel_ind_value = np.zeros(len(coords))
-        k=0
-        for coord in coords:
-            img_o[coord[0], coord[1]] = [0,0,0]
-            pixel_ind_value[k] = img_gray[coord[0], coord[1]]
-            k+=1
-        pixel_value[p] = round(np.average(pixel_ind_value))
-        p+=1
-    return img_o, pixel_value
-
 def flatten(list_in):
     return [item for elem in list_in for item in elem]
 
 root = tkinter.Tk()
 path = tkinter.filedialog.askdirectory(parent=root, initialdir="/", title='Select Folder')
 root.withdraw()
-# pathstr = r"C:\Users\bisch\Desktop\Mattrix\QVGA Panel\JSR QVGA Panel\JSR QVGA #12_sprayed\after encap_photos\microscope pixels\test".replace("\\","/")
-# path = os.path.abspath(pathstr)
 
 # Read all files in the folder
 allfiles = [f for f in listdir(path) if isfile(join(path,f))]
 # imgfiles = [f for f in allfiles if f.upper().endswith('.PNG')]
 imgfiles = [f for f in allfiles if (f.upper().endswith('.BMP') or f.upper().endswith('.PNG')) and 'Uniformity' not in f]
-
 
 pixel_total_R = []
 pixel_total_G = []
@@ -189,7 +132,6 @@ pixel_total_B_2 = []
 for i in range(0, len(imgfiles)):
     filename = imgfiles[i]
     # Load image
-    # img = cv2.imread(path+'/'+filename)
     img_original = cv2.imread(path+'/'+filename)
     img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
     img_R, R_pixel_value = detect_calculate_pixel(img_original, 0)

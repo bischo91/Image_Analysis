@@ -91,7 +91,8 @@ And the examples images in the folder, ./examples/['project name'_examples].
 
 ### AFM Image Process
 <br>
-When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
+The goal of AFM Image Processing is to take AFM images, detect CNT network, and calculate the surface coverage and uniformity of the CNT. The images required are in a very specific form, and it is highly encouraged to only use the example image files.
+When the AFM Image Process program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
 
 ![Image Analyzer](./screenshots/imageanalyzer_1.JPG#center)
 <br><br>
@@ -102,7 +103,7 @@ The right bottom section shows some calculated parameters such as surface covera
 
 Individual image can be save with 'Save Image', and the desired location of the file is selected with the prompt. Similarly, 'Save All' will save all the images in the specified folder.
 The image processing itself goes through multiple functions from image process packages. The following steps are applied for image processing:
-1. cv2.cvtColor (convert RGB to Grayscale image)
+1. cv2.cvtColor (convert RGB to greyscale image)
 2. cv2.GaussianBlur (Gaussian Blur with 3X3 block)
 3. cv2.adaptiveThreshold (Adaptive Gaussian Thresholding) (the image is binarized here)
 4. ImageProcess.feature_removal (removes features that do not seem to be CNT)
@@ -114,9 +115,46 @@ The image processing itself goes through multiple functions from image process p
 
 ### Pixel Uniformity Analysis
 <br>
-The Pixel Uniformity Analysis software prompts to select directory. All the bmp and png files will be processed automatically. Here's an example of input image showing microscopic images of RGB pixels.
-![Pixel Uniformity Analysis](./screenshots/pixeluniformityanalysis_1.bmp#center)
+The purpose of Pixel Uniformity Analysis is to produce pixel-level uniformity from microscopic images. The image files for this application need to be in a specific format. Therefore, it is highly recommended to input example image files to see appropriate results. The application prompts to select directory. All the bmp and png files will be processed automatically.  Here's an example of input image showing microscopic images of RGB pixels.<br><br>
 
+![Pixel Uniformity Analysis](./screenshots/pixeluniformityanalysis_1.bmp#center)
+<p align="center">
+Example of Input Image
+</p>
+<br>
+Pixels are detected through the following image process steps: <br>
+* Two images will be combined in the later step. (Image A and Image B)
+<br>
+
+For Image A (produced by thresholding),<br>
+1. cv2.cvtColor (convert RGB to greyscale image)
+2. cv2.adaptiveThreshold (adaptive thresholding, binary image produced)
+3. cv2.GaussianBlur (Gaussian blurring with 3X3 block)
+4. cv2.threshold (OtsuThreshold)
+
+For Image B (produced by colors),
+1. For every pixel on the image, if pixel is red, for example, return true.
+
+Combining the Image A AND Image B (where both are true will be detected as red, in this example). Once A and B are combined, bounding box is created on each detected pixel. This bounding box is shrunk to completely fit the actual pixel size on the image. After that, pixel values in that shrunk box are averaged, which would represent average greyscale value of one single pixel for a color in the image. These average values are re-arranged into a list for each color (R/G/B) separately. These values are shown as histogram in the output image, and also used in the calculation of uniformity. Uniformity is calculated by 100*(1-(STD/AVG)).
+
+![Pixel Uniformity Analysis](./screenshots/pixeluniformityanalysis_2.png#center)
+<p align="center">
+Example of Output Image
+</p>
+The example of an output image shows the input image filename, counts for each color, and uniformity calculated with the histograms for RGB colors.
+<br><br>
+
+### Panel Uniformity Analysis
+<br>
+<p>
+Panel Uniformity Analysis prompts to select folder location when run. All jpg images in the selected folder are processed. The image files are photographic images of final prototype display panels. And the goal is calculate macroscale uniformity in panel level. The panel is partitioned in grid pattern, which can be changed in the code by changing variables, 'grid_x' and 'grid_y'. Here is an example of an input image.</p><br>
+
+![Pixel Uniformity Analysis](./screenshots/paneluniformityanalysis_1.jpg#center)
+<p align="center">
+Example of Input Image
+</p>
+<p>
+As shown, the display is slightly tilted relative to the photo itself and the photo includes the background. The first step is to detect only the panel area and tilt for it to be straight. Since the panel area is much brighter than the background. Thresholding approach is used. Once the panel is detected, the angle required to rotate is calculated by defining corners and using geometric theory.
 
 <!-- CONTRIBUTING -->
 ## Contributing
