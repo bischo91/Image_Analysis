@@ -25,9 +25,9 @@
     <li>
       <a href="#project-details">Project Details</a></li>
       <ul>
-        <li><a href="#afm-image-process">1. AFM Image Process</a></li>
-        <li><a href="#pixel-uniformity-analysis">2. Pixel Uniformity Analysis</a></li>
-        <li><a href="#panel-uniformity-analysis">3. Panel Uniformity Analysis</a></li>
+        <li><a href="#afm-image-process">AFM Image Process</a></li>
+        <li><a href="#pixel-uniformity-analysis">Pixel Uniformity Analysis</a></li>
+        <li><a href="#panel-uniformity-analysis">Panel Uniformity Analysis</a></li>
       </ul>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -89,7 +89,7 @@ And the examples images in the folder, ./examples/['project name'_examples].
 
 ## Project Details
 
-### 1. AFM Image Process <br>
+### AFM Image Process <br>
 When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
 
 ![Image Analyzer](./screenshots/imageanalyzer_1.JPG#center)
