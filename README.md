@@ -6,7 +6,6 @@
   </a>
 </p>
 
-<!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
   <ol>
@@ -23,7 +22,13 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#Project Details">Project Details</a></li>
+      <ul>
+        <li><a href="#AFM Image Process">1. AFM Image Process</a></li>
+        <li><a href="#Pixel Uniformity Analysis">2. Pixel Uniformity Analysis</a></li>
+        <li><a href="#Panel Uniformity Analysis">3. Panel Uniformity Analysis</a></li>
+      </ul>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -82,23 +87,33 @@ The required files are:
 And the examples images in the folder, ./examples/['project name'_examples].
 <br><br>
 
-## Usage
+## Project Details
 
-1. AFM Image Process <br>
-When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder. The right bottom section shows some calculated parameters such as surface coverage (%). There are also several useful features like 'No Filter', 'Overlay', 'Skeletonize'. 'No Filter' will remove any image process, and show the original image resized. 'Overlay' will overlay the processed and binarized image over the original image. 'Skeletonize' will skeletonize the processed image, which will reduce the surface coverage.
-![Image Analyzer](./screenshots/imageanalyzer_1.JPG)
-Date vs Trend
-* Date
-  When 'Date' is selected, the plot presents data based on a single date selected.
-  Scatter vs Bar
-  * 'Scatter' plots all the data points on the selected 'Date'
-  * 'Bar' shows the average and standard deviation of Y data
-  Y-axis can be either 'Price' [USD] or 'Price/sqft' [USD/sqft]
-  X-axis can be 'bds' (=number of bedrooms), 'ba' (=number of bathrooms), 'location' (=NW/SW/NE/SE/Unknown), 'sqft' (=total sqft of the property)
+###1. AFM Image Process <br>
+When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
 
-* Trend
-  For 'Trend', Y-axis can be the average 'Price' or 'Price/sqft', and X-axis is the range of the selected date.
-  The trend has a legend based on the location, or average of all.
+![Image Analyzer](./screenshots/imageanalyzer_1.JPG#center)
+<br><br>
+The right bottom section shows some calculated parameters such as surface coverage (%). There are also several useful features like 'No Filter', 'Overlay', 'Skeletonize'.
+* 'No Filter' will remove any image process, and show the original image resized.
+* 'Overlay' will overlay the processed and binarized image over the original image. When 'Overlay' is selected, green area indicates that CNT is detected.
+* 'Skeletonize' will skeletonize the processed image, which will reduce the surface coverage.
+
+Individual image can be save with 'Save Image', and the desired location of the file is selected with the prompt. Similarly, 'Save All' will save all the images in the specified folder.
+The image processing itself goes through multiple functions from image process packages. The following steps are applied for image processing:
+1. cv2.cvtColor (convert RGB to Grayscale image)
+2. cv2.GaussianBlur (Gaussian Blur with 3X3 block)
+3. cv2.adaptiveThreshold (Adaptive Gaussian Thresholding) (the image is binarized here)
+4. ImageProcess.feature_removal (removes features that do not seem to be CNT)
+5. ImageProcess.detect_ridges_meijering (detect ridges which highlight fiber looking features) (this produces greyscale image)
+6. cv2.threshold (Otsu Thresholding) (binarize image again)
+5. ImageProcess.feature_removal (further removal of features that do not seem to be CNT)
+
+
+
+2. Pixel Uniformity Analysis
+The Pixel Uniformity Analysis software prompts to select directory. All the bmp and png files will be processed automatically. Here's an example of input image showing microscopic images of RGB pixels.
+![Pixel Uniformity Analysis](./screenshots/pixeluniformityanalysis_1.bmp#center)
 
 
 <!-- CONTRIBUTING -->
