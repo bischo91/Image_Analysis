@@ -25,9 +25,9 @@
     <li>
       <a href="#project-details">Project Details</a></li>
       <ul>
-        <li><a href="#1.-afm-image-process">1. AFM Image Process</a></li>
-        <li><a href="#2.-pixel-uniformity-analysis">2. Pixel Uniformity Analysis</a></li>
-        <li><a href="#3.-panel-uniformity-analysis">3. Panel Uniformity Analysis</a></li>
+        <li><a href="#afm-image-process">1. AFM Image Process</a></li>
+        <li><a href="#pixel-uniformity-analysis">2. Pixel Uniformity Analysis</a></li>
+        <li><a href="#panel-uniformity-analysis">3. Panel Uniformity Analysis</a></li>
       </ul>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
