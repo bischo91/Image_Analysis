@@ -89,7 +89,7 @@ And the examples images in the folder, ./examples/['project name'_examples].
 
 ## Project Details
 
-###1. AFM Image Process <br>
+### 1. AFM Image Process <br>
 When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
 
 ![Image Analyzer](./screenshots/imageanalyzer_1.JPG#center)
