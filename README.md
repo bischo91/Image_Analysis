@@ -89,7 +89,8 @@ And the examples images in the folder, ./examples/['project name'_examples].
 
 ## Project Details
 
-### AFM Image Process <br>
+### AFM Image Process
+<br>
 When the program runs, GUI will show. First, click 'Load Folder', locate './examples/image_analyzer_examples/', and click 'Select Folder'. Since the example images need to be cropped, click 'Resize', which crops the image into pre-defined size. The images can be navigated through '<<' and '>>' to see other images in the folder.<br><br>
 
 ![Image Analyzer](./screenshots/imageanalyzer_1.JPG#center)
@@ -111,7 +112,8 @@ The image processing itself goes through multiple functions from image process p
 
 
 
-2. Pixel Uniformity Analysis
+### Pixel Uniformity Analysis
+<br>
 The Pixel Uniformity Analysis software prompts to select directory. All the bmp and png files will be processed automatically. Here's an example of input image showing microscopic images of RGB pixels.
 ![Pixel Uniformity Analysis](./screenshots/pixeluniformityanalysis_1.bmp#center)
 
