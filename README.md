@@ -39,8 +39,6 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
 This project is specifically made for images taken in certain methods. Thus, the programs are not likely to execute properly unless the example images are used. There are three Image Analysis programs in this project serving different purposes, and the following is a brief summary of each project:
 <ol>
   <li>AFM Image Process (afm_image_process_v1.py)<br><br>
